@@ -12,25 +12,25 @@ import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
 
-@Mixin(ClientPlayNetworkHandler::class)
+@Mixin(ClientPacketListener::class)
 abstract class ClientPlayNetworkHandlerMixin {
 
     @Shadow
     @Final
-    private lateinit var client: MinecraftClient
+    private lateinit var minecraft: Minecraft
 
-    @Inject(method = ["onOpenScreen"], at = [At("HEAD")], cancellable = true)
+    @Inject(method = ["handleOpenScreen"], at = [At("HEAD")], cancellable = true)
     private fun suppressAutomationScreen(packet: OpenScreenS2CPacket, ci: CallbackInfo) {
-        val rawTitle = packet.name.string
+        val rawTitle = packet.title.string
         if (!DonutsAuctionsClient.shouldSuppressAuctionScreenOpen(rawTitle)) {
             return
         }
 
-        val player = client.player ?: return
+        val player = minecraft.player ?: return
         try {
-            val handler = packet.screenHandlerType.create(packet.syncId, player.inventory)
-            player.currentScreenHandler = handler
-            DonutsAuctionsClient.onHeadlessAuctionScreenOpened(rawTitle, packet.syncId)
+            val handler = packet.type.create(packet.containerId, player.inventory)
+            player.containerMenu = handler
+            DonutsAuctionsClient.onHeadlessAuctionScreenOpened(rawTitle, packet.containerId)
             ci.cancel()
         } catch (ex: Exception) {
             logger.error("Failed to open headless auction handler", ex)
