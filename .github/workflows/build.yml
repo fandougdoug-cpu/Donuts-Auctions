@@ -15,6 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -24,3 +25,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Run tests and build mod
         run: ./gradlew test build --no-daemon
+      - name: Upload built mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: donutsauctions-26.2
+          path: build/libs/*.jar
+          if-no-files-found: error
