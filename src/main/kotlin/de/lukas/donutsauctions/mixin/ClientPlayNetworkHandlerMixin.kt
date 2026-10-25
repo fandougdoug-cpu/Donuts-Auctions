@@ -1,9 +1,9 @@
 package de.lukas.donutsauctions.mixin
 
 import de.lukas.donutsauctions.DonutsAuctionsClient
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.network.ClientPlayNetworkHandler
-import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket
+import net.minecraft.client.Minecraft
+import net.minecraft.client.multiplayer.ClientPacketListener
+import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
 import org.slf4j.LoggerFactory
 import org.spongepowered.asm.mixin.Final
 import org.spongepowered.asm.mixin.Mixin
