@@ -26,7 +26,7 @@ object AhNextControlLocator {
             val stack = slot.item
             Candidate(
                 topPosition = position,
-                slotId = slot.id,
+                slotId = slot.index,
                 slotIndex = slot.index,
                 isArrow = !stack.isEmpty && stack.item == Items.ARROW,
                 displayName = sanitizeLabel(stack.hoverName.string)
