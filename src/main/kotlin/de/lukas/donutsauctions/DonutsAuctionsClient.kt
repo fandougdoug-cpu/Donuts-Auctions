@@ -1,6 +1,7 @@
 package de.lukas.donutsauctions
 
 import de.lukas.donutsauctions.config.DonutsAuctionsConfigManager
+import de.lukas.donutsauctions.api.DonutSmpApiImporter
 import de.lukas.donutsauctions.db.AuctionRepository
 import de.lukas.donutsauctions.db.SqliteAuctionRepository
 import de.lukas.donutsauctions.model.AhSearchContext
@@ -56,6 +57,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         private set
 
     private var repository: AuctionRepository? = null
+    @Volatile private var apiSyncRunning: Boolean = false
     private var captureService: AhCaptureService? = null
     private val commandParser = DefaultCommandQueryParser()
     private val deduplicator = SnapshotDeduplicator()
@@ -695,6 +697,41 @@ object DonutsAuctionsClient : ClientModInitializer {
     @Synchronized
     fun isRepositoryWritable(): Boolean {
         return !repositoryHealthSnapshot().readOnly
+    }
+
+    fun syncApiListings(onComplete: (String) -> Unit) {
+        val config = configManager.config
+        if (config.apiKey.isBlank()) {
+            onComplete("API key missing: set it in Mod Config first")
+            return
+        }
+        if (apiSyncRunning) {
+            onComplete("API sync is already running")
+            return
+        }
+        val repo = repository
+        if (repo == null) {
+            onComplete("Database is unavailable")
+            return
+        }
+
+        apiSyncRunning = true
+        Thread({
+            val result = try {
+                val count = DonutSmpApiImporter(repo, config.apiKey).importPages(config.apiImportPages)
+                "API sync complete: imported $count listings"
+            } catch (ex: Exception) {
+                logger.error("DonutSMP API import failed", ex)
+                "API sync failed: ${ex.message ?: ex.javaClass.simpleName}"
+            }
+            Minecraft.getInstance().execute {
+                apiSyncRunning = false
+                onComplete(result)
+            }
+        }, "DonutsAuctions-API-Sync").apply {
+            isDaemon = true
+            start()
+        }
     }
 
     @Synchronized
