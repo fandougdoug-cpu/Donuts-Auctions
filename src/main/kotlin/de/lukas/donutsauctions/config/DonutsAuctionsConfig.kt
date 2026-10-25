@@ -19,7 +19,9 @@ data class DonutsAuctionsConfig(
     val watchCycleIntervalMs: Long = 60_000L,
     val generalCycleIntervalMs: Long = 120_000L,
     val commandMinIntervalMs: Long = 2_500L,
-    val pageCaptureTimeoutMs: Long = 2_500L
+    val pageCaptureTimeoutMs: Long = 2_500L,
+    val apiKey: String = "",
+    val apiImportPages: Int = 20
 ) {
     fun normalized(): DonutsAuctionsConfig {
         return copy(
@@ -37,7 +39,8 @@ data class DonutsAuctionsConfig(
             watchCycleIntervalMs = watchCycleIntervalMs.coerceIn(5_000L, 600_000L),
             generalCycleIntervalMs = generalCycleIntervalMs.coerceIn(5_000L, 600_000L),
             commandMinIntervalMs = commandMinIntervalMs.coerceIn(500L, 60_000L),
-            pageCaptureTimeoutMs = pageCaptureTimeoutMs.coerceIn(500L, 15_000L)
+            pageCaptureTimeoutMs = pageCaptureTimeoutMs.coerceIn(500L, 15_000L),
+            apiImportPages = apiImportPages.coerceIn(1, 100)
         )
     }
 }
