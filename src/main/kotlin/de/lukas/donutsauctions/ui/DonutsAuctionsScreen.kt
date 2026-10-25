@@ -256,8 +256,8 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
         return super.keyPressed(input)
     }
 
-    override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        if (super.mouseClicked(click, doubled)) {
+    override fun mouseMouseButtonEvented(click: MouseButtonEvent, doubled: Boolean): Boolean {
+        if (super.mouseMouseButtonEvented(click, doubled)) {
             return true
         }
 
@@ -678,7 +678,623 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
                 context.fill(panel.left + 2, y, panel.right - 2, y + rowHeight - 2, bg)
 
                 val iconY = y + ((rowHeight - 16) / 2).coerceAtLeast(0)
-                : Boolean {
+                context.drawItem(resolveItemIcon(item.itemId), panel.left + 6, iconY)
+                val watchPrefix = if (isWatched(item.itemId, item.itemSignature)) "★ " else ""
+                drawClampedText(
+                    context,
+                    watchPrefix + item.displayName,
+                    panel.left + 26,
+                    y + 3,
+                    panel.width - 34,
+                    color(0xF0F0F0)
+                )
+
+                val subtitle = if (item.dealScore != null) {
+                    "deal ${formatPercent(item.dealScore)}  |  min ${formatCoins(item.minUnitPrice)}  |  n=${item.sampleCount}"
+                } else {
+                    "${shortItemId(item.itemId)}  |  min ${formatCoins(item.minUnitPrice)}  |  n=${item.sampleCount}"
+                }
+                drawClampedText(
+                    context,
+                    subtitle,
+                    panel.left + 26,
+                    y + 3 + font.lineHeight + 2,
+                    panel.width - 34,
+                    color(0xAFC7E4)
+                )
+            }
+        }
+
+        if (rows.isNotEmpty()) {
+            val visibleRangeEnd = (resultScroll + visibleRows).coerceAtMost(rows.size)
+            context.text(
+                font,
+                Component.literal("${resultScroll + 1}-${visibleRangeEnd} / ${rows.size}"),
+                panel.left + 6,
+                panel.bottom - 12,
+                color(0xA0A0A0),
+                false
+            )
+        }
+    }
+
+    private fun drawDetailPanel(context: GuiGraphicsExtractor, layout: LayoutMetrics) {
+        val panel = detailsPanelBounds(layout)
+        drawPanel(context, panel.left, panel.top, panel.right, panel.bottom)
+        val tabStripBottom = panel.top + 24
+
+        if (panel.height < 110) {
+            context.text(font, Component.literal("Window too small for details"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
+            return
+        }
+
+        val selected = selectedRow
+        if (selected == null) {
+            context.text(font, Component.literal("Select an item from the list"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
+            return
+        }
+
+        withScissor(context, panel.left + 2, tabStripBottom + 2, panel.right - 2, panel.bottom - 2) {
+            when (detailTab) {
+                DetailTab.OVERVIEW -> drawOverviewTab(context, panel, selected, tabStripBottom + 2)
+                DetailTab.TRENDS -> drawTrendsTab(context, panel, selected, tabStripBottom + 2)
+                DetailTab.SELLERS -> drawSellersTab(context, panel, selected, tabStripBottom + 2)
+            }
+        }
+    }
+
+    private fun drawOverviewTab(context: GuiGraphicsExtractor, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+        val left = panel.left + 8
+        val right = panel.right - 8
+        val contentWidth = (right - left).coerceAtLeast(1)
+        var cursorY = contentTop + 4
+
+        drawSectionCard(context, left, cursorY, right, cursorY + 38, "Item")
+        context.drawItem(resolveItemIcon(selected.itemId), left + 6, cursorY + 16)
+        drawClampedText(context, selected.displayName, left + 26, cursorY + 16, contentWidth - 34, color(0xF0F0F0))
+        drawClampedText(context, shortItemId(selected.itemId), left + 26, cursorY + 26, contentWidth - 34, color(0x9FB4CF))
+        cursorY += 44
+
+        val stats = selectedStats
+        if (stats == null) {
+            context.text(font, Component.literal("No priced samples in this window"), left, cursorY + 8, color(0xFF9E9E), false)
+            return
+        }
+
+        val overviewTop = cursorY
+        val overviewHeight = 84
+        drawSectionCard(context, left, overviewTop, right, overviewTop + overviewHeight, "Overview")
+        val twoColumn = DonutsAuctionsScreenLayoutMath.useTwoColumnOverview(contentWidth)
+
+        if (twoColumn) {
+            val leftLabelX = left + 8
+            val leftValueX = left + 88
+            val rightLabelX = left + (contentWidth / 2) + 8
+            val rightValueX = rightLabelX + 78
+            val leftValueWidth = (rightLabelX - leftValueX - 12).coerceAtLeast(40)
+            val rightValueWidth = (right - rightValueX - 8).coerceAtLeast(40)
+            var y = overviewTop + 16
+
+            context.text(font, Component.literal("Samples"), leftLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, stats.sampleCount.toString(), leftValueX, y, leftValueWidth, color(0xEAEAEA))
+            context.text(font, Component.literal("Last seen"), rightLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatTimestamp(stats.lastSeenAt), rightValueX, y, rightValueWidth, color(0xEAEAEA))
+            y += 14
+
+            context.text(font, Component.literal("Unit min"), leftLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.minUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
+            context.text(font, Component.literal("Stack min"), rightLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.minStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
+            y += 14
+
+            context.text(font, Component.literal("Unit avg"), leftLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.avgUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
+            context.text(font, Component.literal("Stack avg"), rightLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.avgStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
+            y += 14
+
+            context.text(font, Component.literal("Unit med"), leftLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.medianUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
+            context.text(font, Component.literal("Stack x${stats.stackSize}"), rightLabelX, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.medianStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
+        } else {
+            val lx = left + 8
+            val vx = left + 94
+            val width = (right - vx - 8).coerceAtLeast(40)
+            var y = overviewTop + 16
+
+            context.text(font, Component.literal("Samples"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, stats.sampleCount.toString(), vx, y, width, color(0xEAEAEA))
+            y += 12
+            context.text(font, Component.literal("Last seen"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatTimestamp(stats.lastSeenAt), vx, y, width, color(0xEAEAEA))
+            y += 12
+            context.text(font, Component.literal("Unit min"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.minUnitPrice), vx, y, width, color(0x9EE09E))
+            y += 12
+            context.text(font, Component.literal("Unit avg"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.avgUnitPrice), vx, y, width, color(0x9EE09E))
+            y += 12
+            context.text(font, Component.literal("Unit med"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.medianUnitPrice), vx, y, width, color(0x9EE09E))
+            y += 12
+            context.text(font, Component.literal("Stack x${stats.stackSize}"), lx, y, color(0xAFC7E4), false)
+            drawClampedText(context, formatCoins(stats.medianStackPrice), vx, y, width, color(0xFFD37F))
+        }
+
+        cursorY = overviewTop + overviewHeight + 4
+        val pct = selectedPercentiles
+        if (pct != null) {
+            val percentileText = "p10 ${formatCoins(pct.p10)}  p50 ${formatCoins(pct.p50)}  p90 ${formatCoins(pct.p90)}"
+            val line1 = trimToWidth(percentileText, contentWidth - 16)
+            drawClampedText(context, line1, left + 8, cursorY, contentWidth - 16, color(0xC7DDF6))
+            if (line1 != percentileText) {
+                val remainder = percentileText.removePrefix(line1.removeSuffix("...")).trim()
+                drawClampedText(context, remainder, left + 8, cursorY + 10, contentWidth - 16, color(0xC7DDF6))
+                cursorY += 20
+            } else {
+                cursorY += 12
+            }
+            cursorY += 4
+        }
+
+        val listTop = cursorY
+        drawSectionCard(context, left, listTop, right, panel.bottom - 8, "Cheapest Listings")
+
+        val tableLeft = left + 8
+        val tableRight = right - 8
+        val tableWidth = (tableRight - tableLeft).coerceAtLeast(120)
+        val colUnit = tableLeft
+        val colAmount = tableLeft + (tableWidth * 0.30).toInt().coerceAtLeast(74)
+        val colSeller = tableLeft + (tableWidth * 0.50).toInt().coerceAtLeast(120)
+        val colAge = tableRight - 46
+
+        val yHeader = listTop + 16
+        context.text(font, Component.literal("Unit"), colUnit, yHeader, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Amount"), colAmount, yHeader, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Seller"), colSeller, yHeader, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Age"), colAge, yHeader, color(0xC9D5EA), false)
+
+        var y = yHeader + 12
+        val maxRows = ((panel.bottom - 12 - y) / 10).coerceAtLeast(1)
+        selectedListings.take(maxRows).forEach { row ->
+            drawClampedText(context, formatCoins(row.unitPrice), colUnit, y, (colAmount - colUnit - 6).coerceAtLeast(24), color(0xE4E4E4))
+            drawClampedText(context, "${row.amount}x", colAmount, y, (colSeller - colAmount - 6).coerceAtLeast(20), color(0xE4E4E4))
+            drawClampedText(context, row.seller ?: "?", colSeller, y, (colAge - colSeller - 6).coerceAtLeast(20), color(0xE4E4E4))
+            drawClampedText(context, relativeAge(row.capturedAt), colAge, y, (tableRight - colAge).coerceAtLeast(20), color(0xE4E4E4))
+            y += 10
+        }
+    }
+
+    private fun drawTrendsTab(context: GuiGraphicsExtractor, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+        val left = panel.left + 8
+        val right = panel.right - 8
+        val contentWidth = (right - left).coerceAtLeast(1)
+
+        drawSectionCard(context, left, contentTop + 4, right, contentTop + 42, "Item")
+        drawClampedText(context, selected.displayName, left + 6, contentTop + 20, contentWidth - 12, color(0xF0F0F0))
+        drawClampedText(context, shortItemId(selected.itemId), left + 6, contentTop + 30, contentWidth - 12, color(0x95A7C6))
+
+        val series = selectedTrendSeries
+        if (series == null || series.points.isEmpty()) {
+            context.text(font, Component.literal("Trend data unavailable for ${trendWindow.label}"), left, contentTop + 56, color(0xFF9E9E), false)
+            return
+        }
+
+        val graphTop = contentTop + 48
+        val graphBottom = (graphTop + 128).coerceAtMost(panel.bottom - 110)
+        drawSectionCard(context, left, graphTop, right, graphBottom, "Trend Graph (${series.windowLabel})")
+        drawTrendGraph(context, left + 8, graphTop + 16, right - 8, graphBottom - 8, series.points)
+
+        val rawTop = graphBottom + 4
+        drawSectionCard(context, left, rawTop, right, panel.bottom - 8, "Raw Data (${series.windowLabel})")
+
+        val tableLeft = left + 8
+        val tableRight = right - 8
+        val tableWidth = (tableRight - tableLeft).coerceAtLeast(140)
+        val colTime = tableLeft
+        val colMin = tableLeft + (tableWidth * 0.38).toInt().coerceAtLeast(120)
+        val colMedian = tableLeft + (tableWidth * 0.58).toInt().coerceAtLeast(210)
+        val colSamples = tableRight - 56
+
+        var y = rawTop + 16
+        context.text(font, Component.literal("Time"), colTime, y, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Min"), colMin, y, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Median"), colMedian, y, color(0xC9D5EA), false)
+        context.text(font, Component.literal("Samples"), colSamples, y, color(0xC9D5EA), false)
+        y += 12
+
+        val maxRows = ((panel.bottom - 12 - y) / 10).coerceAtLeast(1)
+        series.points.takeLast(maxRows).reversed().forEach { point ->
+            drawClampedText(context, formatTimestamp(point.bucketStartAt), colTime, y, (colMin - colTime - 6).coerceAtLeast(30), color(0xE4E4E4))
+            drawClampedText(context, point.minUnitPrice?.let { formatCoins(it) } ?: "n/a", colMin, y, (colMedian - colMin - 6).coerceAtLeast(24), color(0xE4E4E4))
+            drawClampedText(context, point.medianUnitPrice?.let { formatCoins(it) } ?: "n/a", colMedian, y, (colSamples - colMedian - 6).coerceAtLeast(24), color(0xE4E4E4))
+            drawClampedText(context, point.sampleCount.toString(), colSamples, y, (tableRight - colSamples).coerceAtLeast(16), color(0xE4E4E4))
+            y += 10
+        }
+    }
+
+    private fun drawSellersTab(context: GuiGraphicsExtractor, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+        val left = panel.left + 8
+        val right = panel.right - 8
+        val contentWidth = (right - left).coerceAtLeast(1)
+
+        drawSectionCard(context, left, contentTop + 4, right, contentTop + 42, "Item")
+        drawClampedText(context, selected.displayName, left + 6, contentTop + 20, contentWidth - 12, color(0xF0F0F0))
+        drawClampedText(context, shortItemId(selected.itemId), left + 6, contentTop + 30, contentWidth - 12, color(0x95A7C6))
+
+        drawSectionCard(context, left, contentTop + 48, right, panel.bottom - 8, "Seller Stats")
+
+        var y = contentTop + 66
+        val compact = contentWidth < 470
+        if (!compact) {
+            val colSeller = left + 8
+            val colCount = left + (contentWidth * 0.35).toInt().coerceAtLeast(166)
+            val colMin = left + (contentWidth * 0.49).toInt().coerceAtLeast(224)
+            val colAvg = left + (contentWidth * 0.64).toInt().coerceAtLeast(290)
+            val colLast = left + (contentWidth * 0.79).toInt().coerceAtLeast(354)
+
+            context.text(font, Component.literal("Seller"), colSeller, y, color(0xC9D5EA), false)
+            context.text(font, Component.literal("Count"), colCount, y, color(0xC9D5EA), false)
+            context.text(font, Component.literal("Min"), colMin, y, color(0xC9D5EA), false)
+            context.text(font, Component.literal("Avg"), colAvg, y, color(0xC9D5EA), false)
+            context.text(font, Component.literal("Last"), colLast, y, color(0xC9D5EA), false)
+            y += 12
+
+            if (selectedSellers.isEmpty()) {
+                context.text(font, Component.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
+                return
+            }
+
+            val maxRows = ((panel.bottom - 12 - y) / 10).coerceAtLeast(1)
+            selectedSellers.take(maxRows).forEach { s ->
+                drawClampedText(context, s.seller, colSeller, y, (colCount - colSeller - 6).coerceAtLeast(20), color(0xE4E4E4))
+                drawClampedText(context, s.listingCount.toString(), colCount, y, (colMin - colCount - 6).coerceAtLeast(20), color(0xE4E4E4))
+                drawClampedText(context, formatCoins(s.minUnitPrice), colMin, y, (colAvg - colMin - 6).coerceAtLeast(20), color(0xE4E4E4))
+                drawClampedText(context, formatCoins(s.avgUnitPrice), colAvg, y, (colLast - colAvg - 6).coerceAtLeast(20), color(0xE4E4E4))
+                drawClampedText(context, formatTimestamp(s.lastSeenAt), colLast, y, (right - colLast - 6).coerceAtLeast(20), color(0xE4E4E4))
+                y += 10
+            }
+        } else {
+            if (selectedSellers.isEmpty()) {
+                context.text(font, Component.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
+                return
+            }
+            val maxRows = ((panel.bottom - 12 - y) / 20).coerceAtLeast(1)
+            selectedSellers.take(maxRows).forEach { s ->
+                drawClampedText(context, "${s.seller}  |  n=${s.listingCount}  |  min ${formatCoins(s.minUnitPrice)}", left + 8, y, contentWidth - 16, color(0xE4E4E4))
+                y += 10
+                drawClampedText(context, "avg ${formatCoins(s.avgUnitPrice)}  |  last ${formatTimestamp(s.lastSeenAt)}", left + 8, y, contentWidth - 16, color(0xBFCFE5))
+                y += 12
+            }
+        }
+    }
+
+    private fun drawTrendGraph(context: GuiGraphicsExtractor, left: Int, top: Int, right: Int, bottom: Int, points: List<TrendSeriesPoint>) {
+        if (right - left < 40 || bottom - top < 30 || points.isEmpty()) {
+            return
+        }
+
+        context.fill(left, top, right, bottom, 0x22000000)
+        context.fill(left, bottom - 1, right, bottom, 0x66B0C7E8)
+        context.fill(left, top, left + 1, bottom, 0x66B0C7E8)
+
+        val medians = points.mapNotNull { it.medianUnitPrice }
+        if (medians.isEmpty()) {
+            drawClampedText(context, "No median data", left + 6, top + 6, right - left - 12, color(0xBDBDBD))
+            return
+        }
+        val mins = points.mapNotNull { it.minUnitPrice }
+        val minValue = (mins + medians).minOrNull() ?: return
+        val maxValue = (mins + medians).maxOrNull() ?: return
+        val range = (maxValue - minValue).takeIf { it > 0.0001 } ?: 1.0
+
+        val plotWidth = (right - left - 2).coerceAtLeast(1)
+        val plotHeight = (bottom - top - 2).coerceAtLeast(1)
+        fun xFor(index: Int): Int {
+            if (points.size == 1) return left + 1
+            val ratio = index.toDouble() / (points.lastIndex.toDouble())
+            return left + 1 + (ratio * (plotWidth - 1)).toInt()
+        }
+        fun yFor(value: Double): Int {
+            val ratio = ((value - minValue) / range).coerceIn(0.0, 1.0)
+            return top + 1 + ((1.0 - ratio) * (plotHeight - 1)).toInt()
+        }
+
+        var prevMedianX = -1
+        var prevMinX = -1
+        points.forEachIndexed { index, point ->
+            val x = xFor(index)
+            val median = point.medianUnitPrice
+            if (median != null) {
+                val y = yFor(median)
+                if (prevMedianX >= 0) {
+                    context.horizontalLine(prevMedianX, x, y, color(0xE4B364))
+                }
+                context.fill(x, y, x + 1, y + 1, color(0xE4B364))
+                prevMedianX = x
+            }
+
+            val min = point.minUnitPrice
+            if (min != null) {
+                val y = yFor(min)
+                if (prevMinX >= 0) {
+                    context.horizontalLine(prevMinX, x, y, color(0xA7D7FF))
+                }
+                context.fill(x, y, x + 1, y + 1, color(0x9FD7FF))
+                prevMinX = x
+            }
+        }
+
+        drawClampedText(context, "max ${formatCoins(maxValue)}", left + 4, top + 3, right - left - 8, color(0x9FD7FF))
+        drawClampedText(context, "min ${formatCoins(minValue)}", left + 4, bottom - 11, right - left - 8, color(0x9FD7FF))
+        drawClampedText(
+            context,
+            "${formatTimestamp(points.first().bucketStartAt)} -> ${formatTimestamp(points.last().bucketStartAt)}",
+            left + 4,
+            bottom - 21,
+            right - left - 8,
+            color(0x9BB6D7)
+        )
+    }
+
+    private fun drawFooter(context: GuiGraphicsExtractor, layout: LayoutMetrics) {
+        val health = DonutsAuctionsClient.repositoryHealthSnapshot()
+        val foot = when {
+            devModeEnabled && !DonutsAuctionsClient.isRepositoryWritable() -> "Dev mode ON • DB read-only (maintenance disabled)"
+            viewMode == ViewMode.DEALS -> {
+                val cfg = DonutsAuctionsClient.configManager.config
+                "Deals mode • minDiscount ${formatPercent(cfg.minDiscountPct)} • minSamples ${cfg.minSamples}"
+            }
+            else -> "Search mode"
+        }
+
+        var y = height - layout.footerReservedHeight + 8
+        if (layout.showRepairLine && health.lastMigrationSummary != null) {
+            val summary = health.lastMigrationSummary
+            context.text(
+                font,
+                Component.literal("repair: dup ${summary.duplicatesRemoved}, shulker ${summary.shulkerRowsRemoved}, legacy ${summary.legacyRowsRemoved}, orphan ${summary.orphanSnapshotsRemoved}"),
+                20,
+                y,
+                color(0x7D8DA7),
+                false
+            )
+            y += font.lineHeight + 2
+        }
+
+        context.text(font, Component.literal(foot), 20, y, color(0x8FA0BA), false)
+    }
+
+    private fun drawPanel(context: GuiGraphicsExtractor, left: Int, top: Int, right: Int, bottom: Int) {
+        context.fill(left, top, right, bottom, 0x88202020.toInt())
+        context.fill(left + 1, top + 1, right - 1, bottom - 1, 0xAA101010.toInt())
+    }
+
+    private fun drawSectionCard(context: GuiGraphicsExtractor, left: Int, top: Int, right: Int, bottom: Int, title: String) {
+        context.fill(left, top, right, bottom, 0x3A1F2734)
+        context.fill(left, top, right, top + 1, 0x8F637A9B.toInt())
+        context.text(font, Component.literal(title), left + 6, top + 5, color(0xDDE8FF), false)
+    }
+
+    private inline fun withScissor(context: GuiGraphicsExtractor, left: Int, top: Int, right: Int, bottom: Int, block: () -> Unit) {
+        val scLeft = left.coerceAtLeast(0)
+        val scTop = top.coerceAtLeast(0)
+        val scRight = right.coerceAtMost(width)
+        val scBottom = bottom.coerceAtMost(height)
+        if (scRight <= scLeft || scBottom <= scTop) {
+            return
+        }
+        context.enableScissor(scLeft, scTop, scRight, scBottom)
+        try {
+            block()
+        } finally {
+            context.disableScissor()
+        }
+    }
+
+    private fun drawClampedText(context: GuiGraphicsExtractor, value: String, x: Int, y: Int, maxWidth: Int, color: Int, shadow: Boolean = false) {
+        val text = trimToWidth(value, maxWidth)
+        context.text(font, Component.literal(text), x, y, color, shadow)
+    }
+
+    private fun resultsPanelBounds(layout: LayoutMetrics = computeLayoutMetrics()): PanelBounds {
+        val left = 16
+        val top = layout.contentTopY
+        val right = (width / 2) - 6
+        val bottom = layout.contentBottomY
+        return PanelBounds(left, top, right, bottom)
+    }
+
+    private fun detailsPanelBounds(layout: LayoutMetrics = computeLayoutMetrics()): PanelBounds {
+        val left = (width / 2) + 2
+        val top = layout.contentTopY
+        val right = width - 16
+        val bottom = layout.contentBottomY
+        return PanelBounds(left, top, right, bottom)
+    }
+
+    private fun computeLayoutMetrics(): LayoutMetrics {
+        val health = DonutsAuctionsClient.repositoryHealthSnapshot()
+        val showRepairLine = health.status != RepositoryStatus.OK && health.lastMigrationSummary != null
+
+        val topControlsBottomY = 84
+        val statusBannerTopY = topControlsBottomY
+        val statusBannerBottomY = statusBannerTopY + 20
+        val statusTextY = statusBannerBottomY + 8
+        val contentTopY = statusTextY + font.lineHeight + 8
+
+        val devToolsReservedHeight = if (devModeEnabled) 22 else 0
+        val footerReservedHeight = DonutsAuctionsScreenLayoutMath.computeFooterReservedHeight(font.lineHeight, showRepairLine)
+
+        val rawBottom = height - footerReservedHeight - devToolsReservedHeight - 6
+        val minBottom = contentTopY + 100
+        val contentBottomY = rawBottom.coerceAtLeast(minBottom).coerceAtMost(height - 12)
+
+        return LayoutMetrics(
+            topControlsBottomY = topControlsBottomY,
+            statusBannerTopY = statusBannerTopY,
+            statusBannerBottomY = statusBannerBottomY,
+            statusTextY = statusTextY,
+            contentTopY = contentTopY,
+            footerReservedHeight = footerReservedHeight,
+            devToolsReservedHeight = devToolsReservedHeight,
+            contentBottomY = contentBottomY,
+            showRepairLine = showRepairLine
+        )
+    }
+
+    private fun currentStackSize(): Int = stackOptions[stackIndex]
+
+    private fun resolveItemIcon(itemId: String): ItemStack {
+        val id = Identifier.tryParse(itemId)
+        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+            return ItemStack(Items.BARRIER)
+        }
+        return ItemStack(BuiltInRegistries.ITEM.get(id))
+    }
+
+    private fun shortItemId(itemId: String): String = itemId.substringAfter(':', itemId)
+
+    private fun cleanDisplayName(name: String, itemId: String): String {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) {
+            return prettyId(shortItemId(itemId))
+        }
+        if (trimmed.contains(":") && !trimmed.contains(' ')) {
+            return prettyId(trimmed.substringAfter(':'))
+        }
+        return trimmed
+    }
+
+    private fun prettyId(raw: String): String {
+        return raw.replace('_', ' ').split(' ').joinToString(" ") { token ->
+            token.replaceFirstChar { ch ->
+                if (ch.isLowerCase()) ch.titlecase(Locale.ROOT) else ch.toString()
+            }
+        }
+    }
+
+    private fun sortModeShort(mode: SortMode): String {
+        return when (mode) {
+            SortMode.BEST_DEAL -> "Best"
+            SortMode.MIN_PRICE -> "Min"
+            SortMode.SAMPLES -> "Samples"
+            SortMode.RECENT -> "Recent"
+            SortMode.NAME -> "Name"
+        }
+    }
+
+    private fun compactPath(path: Path): String {
+        val raw = path.toString()
+        return if (raw.length <= 70) raw else "...${raw.takeLast(67)}"
+    }
+
+    private fun formatCoins(value: Double): String {
+        return "$" + String.format(Locale.US, "%,.2f", value)
+    }
+
+    private fun formatPercent(value: Double): String {
+        return String.format(Locale.US, "%.1f%%", value)
+    }
+
+    private fun formatTimestamp(timestamp: Long): String {
+        if (timestamp <= 0L) return "n/a"
+        return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).format(formatter)
+    }
+
+    private fun relativeAge(timestamp: Long): String {
+        if (timestamp <= 0L) return "n/a"
+        val diff = (System.currentTimeMillis() - timestamp).coerceAtLeast(0L)
+        val minutes = diff / 60_000L
+        val hours = minutes / 60L
+        val days = hours / 24L
+        return when {
+            days > 0 -> "${days}d"
+            hours > 0 -> "${hours}h"
+            minutes > 0 -> "${minutes}m"
+            else -> "now"
+        }
+    }
+
+    private fun trimToWidth(value: String, maxWidth: Int): String {
+        if (maxWidth <= 0) return ""
+        if (font.width(value) <= maxWidth) return value
+
+        var text = value
+        while (text.isNotEmpty() && font.width("$text...") > maxWidth) {
+            text = text.dropLast(1)
+        }
+        return if (text.isEmpty()) "" else "$text..."
+    }
+
+    private fun color(rgb: Int): Int {
+        return rgb or (0xFF shl 24)
+    }
+
+    private fun keyOf(itemId: String, itemSignature: String): String = "$itemId|$itemSignature"
+
+    private fun isWatched(itemId: String, itemSignature: String): Boolean {
+        return watchlistKeys.contains(keyOf(itemId, itemSignature))
+    }
+
+    private fun isCompactLayout(): Boolean {
+        return width < 1320
+    }
+
+    private fun ItemSearchHit.toRow(): ResultRow {
+        return ResultRow(
+            itemId = itemId,
+            itemSignature = itemSignature,
+            displayName = cleanDisplayName(displayName, itemId),
+            minUnitPrice = minUnitPrice,
+            sampleCount = sampleCount,
+            lastSeenAt = lastSeenAt,
+            dealScore = null
+        )
+    }
+
+    private fun DealCandidate.toRow(): ResultRow {
+        return ResultRow(
+            itemId = itemId,
+            itemSignature = itemSignature,
+            displayName = cleanDisplayName(displayName, itemId),
+            minUnitPrice = currentMinUnitPrice,
+            sampleCount = sampleCount30d,
+            lastSeenAt = lastSeenAt,
+            dealScore = discountVsMedianPct
+        )
+    }
+
+    private data class PanelBounds(
+        val left: Int,
+        val top: Int,
+        val right: Int,
+        val bottom: Int
+    ) {
+        val width: Int get() = right - left
+        val height: Int get() = bottom - top
+    }
+
+    private data class Quad<A, B, C, D>(
+        val first: A,
+        val second: B,
+        val third: C,
+        val fourth: D
+    )
+}
+
+internal object DonutsAuctionsScreenLayoutMath {
+    fun computeRowHeight(lineHeight: Int): Int {
+        return maxOf(24, lineHeight * 2 + 6)
+    }
+
+    fun computeFooterReservedHeight(lineHeight: Int, showRepairLine: Boolean): Int {
+        val lines = if (showRepairLine) 2 else 1
+        return 8 + (lines * (lineHeight + 2)) + 8
+    }
+
+    fun useTwoColumnOverview(contentWidth: Int): Boolean {
         return contentWidth >= 430
     }
 }
