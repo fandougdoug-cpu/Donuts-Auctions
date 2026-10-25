@@ -16,13 +16,11 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
-import net.minecraft.client.input.KeyEvent
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
-import org.lwjgl.glfw.GLFW
 import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
@@ -247,21 +245,12 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
         super.extractRenderState(context, mouseX, mouseY, delta)
     }
 
-    override fun keyPressed(input: KeyEvent): Boolean {
-        val keyCode = input.key()
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            performSearch()
-            return true
-        }
-        return super.keyPressed(input)
-    }
-
-    override fun mouseMouseButtonEvented(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        if (super.mouseMouseButtonEvented(click, doubled)) {
+    override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
+        if (super.mouseClicked(click, doubled)) {
             return true
         }
 
-        if (click.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        if (click.button() != 1) {
             return false
         }
 
