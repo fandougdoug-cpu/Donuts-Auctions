@@ -228,7 +228,7 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
         updateButtonLabels()
         updateControlState()
         setInitialFocus(searchField)
-        performSearch()
+        refreshData()
     }
 
     override fun extractRenderState(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
@@ -346,6 +346,15 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
     }
 
     private fun refreshData() {
+        if (DonutsAuctionsClient.configManager.config.apiKey.isNotBlank()) {
+            statusLine = "Syncing listings from DonutSMP API..."
+            DonutsAuctionsClient.syncApiListings { result ->
+                performSearch()
+                statusLine = "$result | $statusLine"
+            }
+            return
+        }
+
         val selectedKey = selectedRow?.let { keyOf(it.itemId, it.itemSignature) }
         performSearch()
         if (selectedKey != null) {
