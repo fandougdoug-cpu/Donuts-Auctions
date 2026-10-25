@@ -8,7 +8,7 @@ class PlayerIdleTracker {
     private var lastMovementAtMs: Long = 0L
     private var lastSample: MotionSample? = null
 
-    fun update(player: ClientPlayerEntity, nowMs: Long) {
+    fun update(player: LocalPlayer, nowMs: Long) {
         updateSample(
             x = player.x,
             y = player.y,
