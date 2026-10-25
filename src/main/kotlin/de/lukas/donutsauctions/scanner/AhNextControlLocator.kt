@@ -23,13 +23,13 @@ object AhNextControlLocator {
 
     internal fun findStrictNextCandidate(topSlots: List<Slot>): Candidate? {
         val candidates = topSlots.mapIndexed { position, slot ->
-            val stack = slot.stack
+            val stack = slot.item
             Candidate(
                 topPosition = position,
                 slotId = slot.id,
                 slotIndex = slot.index,
                 isArrow = !stack.isEmpty && stack.item == Items.ARROW,
-                displayName = sanitizeLabel(stack.name.string)
+                displayName = sanitizeLabel(stack.hoverName.string)
             )
         }
         return selectStrictNextCandidate(topSlots.size, candidates)
