@@ -29,7 +29,7 @@ import de.lukas.donutsauctions.ui.DonutsAuctionsScreen
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
@@ -40,7 +40,6 @@ import net.minecraft.client.KeyMapping
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.ClickType
-import net.minecraft.resources.ResourceLocation
 import org.slf4j.LoggerFactory
 import org.lwjgl.glfw.GLFW
 import java.nio.file.Path
@@ -64,7 +63,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     private val idleTracker = PlayerIdleTracker()
     private val automationCoordinator = IdleAhAutomationCoordinator()
 
-    private lateinit var openGuiKey: KeyBinding
+    private lateinit var openGuiKey: KeyMapping
 
     @Volatile
     private var pendingSearchContext: AhSearchContext? = null
@@ -111,12 +110,12 @@ object DonutsAuctionsClient : ClientModInitializer {
         configManager.load()
         reloadConfiguration()
 
-        openGuiKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+        openGuiKey = KeyMappingHelper.registerKeyMapping(
+            KeyMapping(
                 "key.donutsauctions.open",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_KP_MULTIPLY,
-                KeyBinding.Category.create(Identifier.of(MOD_ID, "general"))
+                KeyMapping.Category.MISC
             )
         )
 
