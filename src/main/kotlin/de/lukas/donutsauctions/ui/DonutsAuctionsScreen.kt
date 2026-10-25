@@ -667,7 +667,6 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
                 context.fill(panel.left + 2, y, panel.right - 2, y + rowHeight - 2, bg)
 
                 val iconY = y + ((rowHeight - 16) / 2).coerceAtLeast(0)
-                context.drawItem(resolveItemIcon(item.itemId), panel.left + 6, iconY)
                 val watchPrefix = if (isWatched(item.itemId, item.itemSignature)) "★ " else ""
                 drawClampedText(
                     context,
@@ -739,7 +738,6 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
         var cursorY = contentTop + 4
 
         drawSectionCard(context, left, cursorY, right, cursorY + 38, "Item")
-        context.drawItem(resolveItemIcon(selected.itemId), left + 6, cursorY + 16)
         drawClampedText(context, selected.displayName, left + 26, cursorY + 16, contentWidth - 34, color(0xF0F0F0))
         drawClampedText(context, shortItemId(selected.itemId), left + 26, cursorY + 26, contentWidth - 34, color(0x9FB4CF))
         cursorY += 44
@@ -1140,7 +1138,7 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
         if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
             return ItemStack(Items.BARRIER)
         }
-        return ItemStack(BuiltInRegistries.ITEM.get(id))
+        return ItemStack(BuiltInRegistries.ITEM.get(id).orElseThrow())
     }
 
     private fun shortItemId(itemId: String): String = itemId.substringAfter(':', itemId)
