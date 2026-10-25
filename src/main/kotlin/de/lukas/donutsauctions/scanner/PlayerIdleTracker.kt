@@ -13,10 +13,10 @@ class PlayerIdleTracker {
             x = player.x,
             y = player.y,
             z = player.z,
-            vx = player.velocity.x,
-            vy = player.velocity.y,
-            vz = player.velocity.z,
-            onGround = player.isOnGround,
+            vx = player.deltaMovement.x,
+            vy = player.deltaMovement.y,
+            vz = player.deltaMovement.z,
+            onGround = player.onGround,
             nowMs = nowMs
         )
     }
