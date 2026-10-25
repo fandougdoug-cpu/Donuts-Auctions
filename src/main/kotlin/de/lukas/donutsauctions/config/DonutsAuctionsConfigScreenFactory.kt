@@ -19,6 +19,24 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
+                .startStrField(Component.literal("DonutSMP API key (keep private)"), current.apiKey)
+                .setDefaultValue("")
+                .setSaveConsumer { draft = draft.copy(apiKey = it.trim()) }
+                .build()
+        )
+
+        general.addEntry(
+            entries
+                .startIntField(Component.literal("API pages to import"), current.apiImportPages)
+                .setDefaultValue(20)
+                .setMin(1)
+                .setMax(100)
+                .setSaveConsumer { draft = draft.copy(apiImportPages = it) }
+                .build()
+        )
+
+        general.addEntry(
+            entries
                 .startBooleanToggle(Component.literal("Tracking enabled"), current.trackingEnabled)
                 .setDefaultValue(true)
                 .setSaveConsumer { draft = draft.copy(trackingEnabled = it) }
