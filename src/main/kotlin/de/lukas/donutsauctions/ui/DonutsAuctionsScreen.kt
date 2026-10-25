@@ -1009,7 +1009,7 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
             if (median != null) {
                 val y = yFor(median)
                 if (prevMedianX >= 0) {
-                    context.drawHorizontalLine(prevMedianX, x, y, color(0xE4B364))
+                    context.hLine(prevMedianX, x, y, color(0xE4B364))
                 }
                 context.fill(x, y, x + 1, y + 1, color(0xE4B364))
                 prevMedianX = x
@@ -1019,7 +1019,7 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
             if (min != null) {
                 val y = yFor(min)
                 if (prevMinX >= 0) {
-                    context.drawHorizontalLine(prevMinX, x, y, color(0xA7D7FF))
+                    context.hLine(prevMinX, x, y, color(0xA7D7FF))
                 }
                 context.fill(x, y, x + 1, y + 1, color(0x9FD7FF))
                 prevMinX = x
@@ -1147,11 +1147,11 @@ class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
     private fun currentStackSize(): Int = stackOptions[stackIndex]
 
     private fun resolveItemIcon(itemId: String): ItemStack {
-        val id = Identifier.tryParse(itemId)
-        if (id == null || !Registries.ITEM.containsId(id)) {
+        val id = ResourceLocation.tryParse(itemId)
+        if (id == null || !BuiltInRegistries.ITEM.containsId(id)) {
             return ItemStack(Items.BARRIER)
         }
-        return ItemStack(Registries.ITEM.get(id))
+        return ItemStack(BuiltInRegistries.ITEM.get(id))
     }
 
     private fun shortItemId(itemId: String): String = itemId.substringAfter(':', itemId)
