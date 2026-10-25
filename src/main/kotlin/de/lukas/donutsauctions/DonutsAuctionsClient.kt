@@ -259,7 +259,7 @@ object DonutsAuctionsClient : ClientModInitializer {
                         activateAutomationCooldown(now, stopReason)
                         automationCoordinator.requestStop(stopReason)
                         onHeadlessAuctionScreenClosed(stopReason)
-                        client.player?.closeHandledScreen()
+                        client.player?.closeContainer()
                         logDebug("Automation fail-safe triggered: closed screen due to unexpected non-AH menu")
                     }
                     if (auctionMenuOpen && result.reason.startsWith("Screen does not look like auction")) {
@@ -432,7 +432,7 @@ object DonutsAuctionsClient : ClientModInitializer {
             }
             IdleAhAutomationCoordinator.Action.CloseHandledScreen -> {
                 onHeadlessAuctionScreenClosed("Automation requested close")
-                client.player?.closeHandledScreen()
+                client.player?.closeContainer()
                 logDebug("Automation closed handled screen to finish stop sequence")
             }
         }
@@ -551,7 +551,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     private fun resolveHeadlessCaptureTitle(client: Minecraft, now: Long): String? {
         val title = activeHeadlessAuctionTitle ?: return null
         val expectedSyncId = activeHeadlessAuctionSyncId ?: return null
-        val handler = client.player?.currentScreenHandler ?: return null
+        val handler = client.player?.containerMenu ?: return null
         if (handler.syncId != expectedSyncId) {
             val reason = "Automation headless sync mismatch (expected=$expectedSyncId, actual=${handler.syncId})"
             activateAutomationCooldown(now, reason)
@@ -572,7 +572,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         if (title.isBlank()) {
             return false
         }
-        val handler = client.player?.currentScreenHandler ?: return false
+        val handler = client.player?.containerMenu ?: return false
         return handler.syncId == expectedSyncId
     }
 
@@ -644,7 +644,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun currentServerId(): String {
-        return Minecraft.getInstance().currentServerEntry?.address ?: "singleplayer"
+        return Minecraft.getInstance().currentServer?.address ?: "singleplayer"
     }
 
     private fun logNoop(reason: String, now: Long) {
