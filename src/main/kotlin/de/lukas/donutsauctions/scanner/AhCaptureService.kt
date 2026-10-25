@@ -37,11 +37,11 @@ class AhCaptureService(
         capturedPageKeys.clear()
     }
 
-    fun capture(client: MinecraftClient, searchContext: AhSearchContext?, forcedTitle: String? = null): AhCaptureResult {
+    fun capture(client: Minecraft, searchContext: AhSearchContext?, forcedTitle: String? = null): AhCaptureResult {
         val player = client.player ?: return AhCaptureResult.Noop("Player unavailable")
-        val handler = player.currentScreenHandler ?: return AhCaptureResult.Noop("Screen handler unavailable")
+        val handler = player.containerMenu ?: return AhCaptureResult.Noop("Screen handler unavailable")
         val title = forcedTitle?.takeIf { it.isNotBlank() }
-            ?: client.currentScreen?.title?.string
+            ?: client.screen?.title?.string
             ?: return AhCaptureResult.Noop("Capture title unavailable")
 
         val topSlotCount = determineTopSlotCount(handler)
@@ -53,9 +53,9 @@ class AhCaptureService(
         val topSlotsByIndex = topSlots.associateBy { it.index }
         val controls = findControlSlots(topSlots)
         val listingSlots = topSlots.filter { slot ->
-            if (slot.stack.isEmpty) return@filter false
+            if (slot.item.isEmpty) return@filter false
             if (controls.containsKey(slot.index)) return@filter false
-            isAuctionListing(slot.stack, client)
+            isAuctionListing(slot.item, client)
         }
 
         val hasAuctionControls = controls.values.contains("SEARCH") && controls.values.any { it in setOf("SORT", "FILTER", "NEXT", "AUCTION") }
@@ -64,8 +64,8 @@ class AhCaptureService(
             return AhCaptureResult.Noop("Screen does not look like auction (title='$title', controls=${controls.values.sorted()}, listingCandidates=${listingSlots.size})")
         }
 
-        val sortMode = controls.entries.firstOrNull { it.value == "SORT" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.stack, client) }
-        val filterMode = controls.entries.firstOrNull { it.value == "FILTER" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.stack, client) }
+        val sortMode = controls.entries.firstOrNull { it.value == "SORT" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.item, client) }
+        val filterMode = controls.entries.firstOrNull { it.value == "FILTER" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.item, client) }
         val page = pageRegex.find(title)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
         val query = searchContext?.query.orEmpty()
@@ -78,7 +78,7 @@ class AhCaptureService(
         val records = listingSlots.map { slot ->
             toListingRecord(
                 client = client,
-                stack = slot.stack,
+                stack = slot.item,
                 slot = slot,
                 query = query,
                 capturedAt = capturedAt,
@@ -121,8 +121,8 @@ class AhCaptureService(
         )
     }
 
-    private fun determineTopSlotCount(handler: net.minecraft.screen.ScreenHandler): Int {
-        if (handler is GenericContainerScreenHandler) {
+    private fun determineTopSlotCount(handler: net.minecraft.world.inventory.AbstractContainerMenu): Int {
+        if (handler is ChestMenu) {
             return handler.rows * 9
         }
 
@@ -135,10 +135,10 @@ class AhCaptureService(
         val strictNextSlotIndex = AhNextControlLocator.findStrictNextSlotIndex(topSlots)
 
         topSlots.forEach { slot ->
-            val stack = slot.stack
+            val stack = slot.item
             if (stack.isEmpty) return@forEach
 
-            val displayName = sanitize(stack.name.string)
+            val displayName = sanitize(stack.hoverName.string)
             val type = stack.item
 
             val control = when {
@@ -158,7 +158,7 @@ class AhCaptureService(
         return mapping
     }
 
-    private fun isAuctionListing(stack: ItemStack, client: MinecraftClient): Boolean {
+    private fun isAuctionListing(stack: ItemStack, client: Minecraft): Boolean {
         val loreLines = tooltipLines(stack, client)
         if (loreLines.isEmpty()) {
             return false
@@ -171,7 +171,7 @@ class AhCaptureService(
         return hasPrice && hasSeller && hasTimeLeft
     }
 
-    private fun inferSelectedMode(stack: ItemStack, client: MinecraftClient): String? {
+    private fun inferSelectedMode(stack: ItemStack, client: Minecraft): String? {
         val loreLines = tooltipLines(stack, client)
         for (line in loreLines) {
             val trimmed = sanitize(line).trim()
@@ -183,7 +183,7 @@ class AhCaptureService(
     }
 
     private fun toListingRecord(
-        client: MinecraftClient,
+        client: Minecraft,
         stack: ItemStack,
         slot: Slot,
         query: String,
@@ -198,7 +198,7 @@ class AhCaptureService(
         val amount = stack.count.coerceAtLeast(1)
         val unitPrice = totalPrice?.toDouble()?.div(amount)
         val itemId = Registries.ITEM.getId(stack.item).toString()
-        val displayName = sanitize(stack.name.string)
+        val displayName = sanitize(stack.hoverName.string)
         val itemSignature = signatureBuilder.build(
             itemId = itemId,
             displayName = displayName,
@@ -228,11 +228,11 @@ class AhCaptureService(
         )
     }
 
-    private fun tooltipLines(stack: ItemStack, client: MinecraftClient): List<String> {
+    private fun tooltipLines(stack: ItemStack, client: Minecraft): List<String> {
         return try {
             stack.getTooltip(Item.TooltipContext.DEFAULT, client.player, TooltipType.BASIC).map { sanitize(it.string) }
         } catch (_: Throwable) {
-            listOf(sanitize(stack.name.string))
+            listOf(sanitize(stack.hoverName.string))
         }
     }
 
