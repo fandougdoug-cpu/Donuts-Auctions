@@ -1,7 +1,7 @@
 package de.lukas.donutsauctions.scanner
 
-import net.minecraft.item.Items
-import net.minecraft.screen.slot.Slot
+import net.minecraft.world.item.Items
+import net.minecraft.world.inventory.Slot
 
 object AhNextControlLocator {
 
