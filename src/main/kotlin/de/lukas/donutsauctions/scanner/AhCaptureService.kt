@@ -5,11 +5,11 @@ import de.lukas.donutsauctions.model.AhSearchContext
 import de.lukas.donutsauctions.model.AuctionListingRecord
 import de.lukas.donutsauctions.parser.ItemSignatureBuilder
 import de.lukas.donutsauctions.parser.PriceParser
-import net.minecraft.client.MinecraftClient
-import net.minecraft.item.Item
+import net.minecraft.client.Minecraft
+import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
-import net.minecraft.item.tooltip.TooltipType
+import net.minecraft.world.item.TooltipFlag
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.Slot
