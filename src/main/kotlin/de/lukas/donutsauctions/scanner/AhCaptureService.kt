@@ -7,12 +7,12 @@ import de.lukas.donutsauctions.parser.ItemSignatureBuilder
 import de.lukas.donutsauctions.parser.PriceParser
 import net.minecraft.client.MinecraftClient
 import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.item.tooltip.TooltipType
-import net.minecraft.registry.Registries
-import net.minecraft.screen.GenericContainerScreenHandler
-import net.minecraft.screen.slot.Slot
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.inventory.ChestMenu
+import net.minecraft.world.inventory.Slot
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
