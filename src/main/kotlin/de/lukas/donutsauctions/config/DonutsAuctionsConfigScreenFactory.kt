@@ -2,8 +2,8 @@ package de.lukas.donutsauctions.config
 
 import de.lukas.donutsauctions.DonutsAuctionsClient
 import me.shedaniel.clothconfig2.api.ConfigBuilder
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 object DonutsAuctionsConfigScreenFactory {
     fun create(parent: Screen?): Screen {
