@@ -1,6 +1,6 @@
 package de.lukas.donutsauctions.scanner
 
-import net.minecraft.client.network.ClientPlayerEntity
+import net.minecraft.client.player.LocalPlayer
 import kotlin.math.abs
 
 class PlayerIdleTracker {
