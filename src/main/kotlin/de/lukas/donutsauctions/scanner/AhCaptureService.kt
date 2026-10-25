@@ -5,14 +5,14 @@ import de.lukas.donutsauctions.model.AhSearchContext
 import de.lukas.donutsauctions.model.AuctionListingRecord
 import de.lukas.donutsauctions.parser.ItemSignatureBuilder
 import de.lukas.donutsauctions.parser.PriceParser
-import net.minecraft.client.MinecraftClient
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.item.tooltip.TooltipType
-import net.minecraft.registry.Registries
-import net.minecraft.screen.GenericContainerScreenHandler
-import net.minecraft.screen.slot.Slot
+import net.minecraft.client.Minecraft
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.item.TooltipFlag
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.inventory.ChestMenu
+import net.minecraft.world.inventory.Slot
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
@@ -28,20 +28,20 @@ class AhCaptureService(
 
     private val pageRegex = Regex("(?i)page\\D*(\\d+)")
     private val sellerRegex = Regex("(?i)(seller|owner)\\s*[:>-]\\s*(.+)$")
-    private val priceLineRegex = Regex("(?i)\\bprice\\b")
-    private val sellerLineRegex = Regex("(?i)\\b(seller|owner)\\b")
-    private val timeLeftLineRegex = Regex("(?i)\\btime\\s*left\\b")
+    private val priceLineRegex = Regex("(?i)(\\bprice\\b|\\bcost\\b|\\bbuy\\b|\\bcoins?\\b|\\bcash\\b|[$€£])")
+    private val sellerLineRegex = Regex("(?i)\\b(seller|owner|listed by|from)\\b")
+    private val timeLeftLineRegex = Regex("(?i)(\\btime\\s*left\\b|\\bexpires?\\b|\\bending\\b|\\bremaining\\b)")
 
     @Synchronized
     fun resetSession() {
         capturedPageKeys.clear()
     }
 
-    fun capture(client: MinecraftClient, searchContext: AhSearchContext?, forcedTitle: String? = null): AhCaptureResult {
+    fun capture(client: Minecraft, searchContext: AhSearchContext?, forcedTitle: String? = null): AhCaptureResult {
         val player = client.player ?: return AhCaptureResult.Noop("Player unavailable")
-        val handler = player.currentScreenHandler ?: return AhCaptureResult.Noop("Screen handler unavailable")
+        val handler = player.containerMenu ?: return AhCaptureResult.Noop("Screen handler unavailable")
         val title = forcedTitle?.takeIf { it.isNotBlank() }
-            ?: client.currentScreen?.title?.string
+            ?: client.gui.screen()?.title?.string
             ?: return AhCaptureResult.Noop("Capture title unavailable")
 
         val topSlotCount = determineTopSlotCount(handler)
@@ -53,9 +53,9 @@ class AhCaptureService(
         val topSlotsByIndex = topSlots.associateBy { it.index }
         val controls = findControlSlots(topSlots)
         val listingSlots = topSlots.filter { slot ->
-            if (slot.stack.isEmpty) return@filter false
+            if (slot.item.isEmpty) return@filter false
             if (controls.containsKey(slot.index)) return@filter false
-            isAuctionListing(slot.stack, client)
+            isAuctionListing(slot.item, client)
         }
 
         val hasAuctionControls = controls.values.contains("SEARCH") && controls.values.any { it in setOf("SORT", "FILTER", "NEXT", "AUCTION") }
@@ -64,8 +64,8 @@ class AhCaptureService(
             return AhCaptureResult.Noop("Screen does not look like auction (title='$title', controls=${controls.values.sorted()}, listingCandidates=${listingSlots.size})")
         }
 
-        val sortMode = controls.entries.firstOrNull { it.value == "SORT" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.stack, client) }
-        val filterMode = controls.entries.firstOrNull { it.value == "FILTER" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.stack, client) }
+        val sortMode = controls.entries.firstOrNull { it.value == "SORT" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.item, client) }
+        val filterMode = controls.entries.firstOrNull { it.value == "FILTER" }?.let { topSlotsByIndex[it.key] }?.let { inferSelectedMode(it.item, client) }
         val page = pageRegex.find(title)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
         val query = searchContext?.query.orEmpty()
@@ -78,7 +78,7 @@ class AhCaptureService(
         val records = listingSlots.map { slot ->
             toListingRecord(
                 client = client,
-                stack = slot.stack,
+                stack = slot.item,
                 slot = slot,
                 query = query,
                 capturedAt = capturedAt,
@@ -121,9 +121,9 @@ class AhCaptureService(
         )
     }
 
-    private fun determineTopSlotCount(handler: net.minecraft.screen.ScreenHandler): Int {
-        if (handler is GenericContainerScreenHandler) {
-            return handler.rows * 9
+    private fun determineTopSlotCount(handler: net.minecraft.world.inventory.AbstractContainerMenu): Int {
+        if (handler is ChestMenu) {
+            return handler.rowCount * 9
         }
 
         val fallback = handler.slots.size - 36
@@ -135,10 +135,10 @@ class AhCaptureService(
         val strictNextSlotIndex = AhNextControlLocator.findStrictNextSlotIndex(topSlots)
 
         topSlots.forEach { slot ->
-            val stack = slot.stack
+            val stack = slot.item
             if (stack.isEmpty) return@forEach
 
-            val displayName = sanitize(stack.name.string)
+            val displayName = sanitize(stack.hoverName.string)
             val type = stack.item
 
             val control = when {
@@ -158,20 +158,23 @@ class AhCaptureService(
         return mapping
     }
 
-    private fun isAuctionListing(stack: ItemStack, client: MinecraftClient): Boolean {
+    private fun isAuctionListing(stack: ItemStack, client: Minecraft): Boolean {
         val loreLines = tooltipLines(stack, client)
         if (loreLines.isEmpty()) {
             return false
         }
 
+        // Auction servers do not all use the same lore labels. Requiring the exact
+        // trio "Price", "Seller", and "Time Left" silently rejects valid listings.
+        // Accept common price/seller/expiry wording while still avoiding ordinary items.
         val hasPrice = loreLines.any { priceLineRegex.containsMatchIn(it) }
         val hasSeller = loreLines.any { sellerLineRegex.containsMatchIn(it) }
         val hasTimeLeft = loreLines.any { timeLeftLineRegex.containsMatchIn(it) }
 
-        return hasPrice && hasSeller && hasTimeLeft
+        return hasPrice && (hasSeller || hasTimeLeft)
     }
 
-    private fun inferSelectedMode(stack: ItemStack, client: MinecraftClient): String? {
+    private fun inferSelectedMode(stack: ItemStack, client: Minecraft): String? {
         val loreLines = tooltipLines(stack, client)
         for (line in loreLines) {
             val trimmed = sanitize(line).trim()
@@ -183,7 +186,7 @@ class AhCaptureService(
     }
 
     private fun toListingRecord(
-        client: MinecraftClient,
+        client: Minecraft,
         stack: ItemStack,
         slot: Slot,
         query: String,
@@ -197,8 +200,8 @@ class AhCaptureService(
         val totalPrice = priceParser.parseFirstPrice(loreLines)
         val amount = stack.count.coerceAtLeast(1)
         val unitPrice = totalPrice?.toDouble()?.div(amount)
-        val itemId = Registries.ITEM.getId(stack.item).toString()
-        val displayName = sanitize(stack.name.string)
+        val itemId = BuiltInRegistries.ITEM.getKey(stack.item).toString()
+        val displayName = sanitize(stack.hoverName.string)
         val itemSignature = signatureBuilder.build(
             itemId = itemId,
             displayName = displayName,
@@ -228,11 +231,11 @@ class AhCaptureService(
         )
     }
 
-    private fun tooltipLines(stack: ItemStack, client: MinecraftClient): List<String> {
+    private fun tooltipLines(stack: ItemStack, client: Minecraft): List<String> {
         return try {
-            stack.getTooltip(Item.TooltipContext.DEFAULT, client.player, TooltipType.BASIC).map { sanitize(it.string) }
+            stack.getTooltipLines(Item.TooltipContext.EMPTY, client.player, TooltipFlag.Default.NORMAL).map { sanitize(it.string) }
         } catch (_: Throwable) {
-            listOf(sanitize(stack.name.string))
+            listOf(sanitize(stack.hoverName.string))
         }
     }
 

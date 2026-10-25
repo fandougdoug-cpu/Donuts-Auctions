@@ -1,6 +1,6 @@
 package de.lukas.donutsauctions.scanner
 
-import net.minecraft.client.network.ClientPlayerEntity
+import net.minecraft.client.player.LocalPlayer
 import kotlin.math.abs
 
 class PlayerIdleTracker {
@@ -8,15 +8,15 @@ class PlayerIdleTracker {
     private var lastMovementAtMs: Long = 0L
     private var lastSample: MotionSample? = null
 
-    fun update(player: ClientPlayerEntity, nowMs: Long) {
+    fun update(player: LocalPlayer, nowMs: Long) {
         updateSample(
             x = player.x,
             y = player.y,
             z = player.z,
-            vx = player.velocity.x,
-            vy = player.velocity.y,
-            vz = player.velocity.z,
-            onGround = player.isOnGround,
+            vx = player.deltaMovement.x,
+            vy = player.deltaMovement.y,
+            vz = player.deltaMovement.z,
+            onGround = player.onGround(),
             nowMs = nowMs
         )
     }

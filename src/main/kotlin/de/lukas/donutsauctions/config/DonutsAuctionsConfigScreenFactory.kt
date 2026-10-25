@@ -2,8 +2,8 @@ package de.lukas.donutsauctions.config
 
 import de.lukas.donutsauctions.DonutsAuctionsClient
 import me.shedaniel.clothconfig2.api.ConfigBuilder
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 object DonutsAuctionsConfigScreenFactory {
     fun create(parent: Screen?): Screen {
@@ -12,14 +12,32 @@ object DonutsAuctionsConfigScreenFactory {
 
         val builder = ConfigBuilder.create()
             .setParentScreen(parent)
-            .setTitle(Text.literal("DonutsAuctions Config"))
+            .setTitle(Component.literal("DonutsAuctions Config"))
         val entries = builder.entryBuilder()
-        val general = builder.getOrCreateCategory(Text.literal("General"))
-        val automation = builder.getOrCreateCategory(Text.literal("Idle Automation"))
+        val general = builder.getOrCreateCategory(Component.literal("General"))
+        val automation = builder.getOrCreateCategory(Component.literal("Idle Automation"))
 
         general.addEntry(
             entries
-                .startBooleanToggle(Text.literal("Tracking enabled"), current.trackingEnabled)
+                .startStrField(Component.literal("DonutSMP API key (keep private)"), current.apiKey)
+                .setDefaultValue("")
+                .setSaveConsumer { draft = draft.copy(apiKey = it.trim()) }
+                .build()
+        )
+
+        general.addEntry(
+            entries
+                .startIntField(Component.literal("API pages to import"), current.apiImportPages)
+                .setDefaultValue(20)
+                .setMin(1)
+                .setMax(100)
+                .setSaveConsumer { draft = draft.copy(apiImportPages = it) }
+                .build()
+        )
+
+        general.addEntry(
+            entries
+                .startBooleanToggle(Component.literal("Tracking enabled"), current.trackingEnabled)
                 .setDefaultValue(true)
                 .setSaveConsumer { draft = draft.copy(trackingEnabled = it) }
                 .build()
@@ -27,7 +45,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startIntField(Text.literal("Scan interval (ticks)"), current.scanIntervalTicks)
+                .startIntField(Component.literal("Scan interval (ticks)"), current.scanIntervalTicks)
                 .setDefaultValue(10)
                 .setMin(1)
                 .setMax(200)
@@ -37,7 +55,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startStrField(Text.literal("SQLite DB path"), current.dbPath)
+                .startStrField(Component.literal("SQLite DB path"), current.dbPath)
                 .setDefaultValue("config/donutsauctions/auctions.db")
                 .setSaveConsumer { draft = draft.copy(dbPath = it) }
                 .build()
@@ -45,7 +63,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startIntField(Text.literal("Max DB size (MB)"), current.maxDbSizeMb)
+                .startIntField(Component.literal("Max DB size (MB)"), current.maxDbSizeMb)
                 .setDefaultValue(1024)
                 .setMin(16)
                 .setMax(16_384)
@@ -55,7 +73,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startBooleanToggle(Text.literal("Debug logging"), current.debugLogging)
+                .startBooleanToggle(Component.literal("Debug logging"), current.debugLogging)
                 .setDefaultValue(false)
                 .setSaveConsumer { draft = draft.copy(debugLogging = it) }
                 .build()
@@ -63,7 +81,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startDoubleField(Text.literal("Min discount (%)"), current.minDiscountPct)
+                .startDoubleField(Component.literal("Min discount (%)"), current.minDiscountPct)
                 .setDefaultValue(10.0)
                 .setMin(0.0)
                 .setMax(95.0)
@@ -73,7 +91,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startIntField(Text.literal("Min samples"), current.minSamples)
+                .startIntField(Component.literal("Min samples"), current.minSamples)
                 .setDefaultValue(5)
                 .setMin(1)
                 .setMax(500)
@@ -83,7 +101,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startBooleanToggle(Text.literal("Dev mode enabled"), current.devModeEnabled)
+                .startBooleanToggle(Component.literal("Dev mode enabled"), current.devModeEnabled)
                 .setDefaultValue(false)
                 .setSaveConsumer { draft = draft.copy(devModeEnabled = it) }
                 .build()
@@ -91,7 +109,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         general.addEntry(
             entries
-                .startStrField(Text.literal("Export directory"), current.exportDir)
+                .startStrField(Component.literal("Export directory"), current.exportDir)
                 .setDefaultValue("config/donutsauctions/exports")
                 .setSaveConsumer { draft = draft.copy(exportDir = it) }
                 .build()
@@ -99,7 +117,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startBooleanToggle(Text.literal("Idle background enabled"), current.idleBackgroundEnabled)
+                .startBooleanToggle(Component.literal("Idle background enabled"), current.idleBackgroundEnabled)
                 .setDefaultValue(false)
                 .setSaveConsumer { draft = draft.copy(idleBackgroundEnabled = it) }
                 .build()
@@ -107,7 +125,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Idle start delay (ms)"), current.idleStartDelayMs.toInt())
+                .startIntField(Component.literal("Idle start delay (ms)"), current.idleStartDelayMs.toInt())
                 .setDefaultValue(3_000)
                 .setMin(500)
                 .setMax(60_000)
@@ -117,7 +135,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("General scan pages"), current.generalScanPages)
+                .startIntField(Component.literal("General scan pages"), current.generalScanPages)
                 .setDefaultValue(20)
                 .setMin(1)
                 .setMax(100)
@@ -127,7 +145,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Watch scan pages"), current.watchScanPages)
+                .startIntField(Component.literal("Watch scan pages"), current.watchScanPages)
                 .setDefaultValue(2)
                 .setMin(1)
                 .setMax(20)
@@ -137,7 +155,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Watch items per cycle"), current.watchItemsPerWindowCap)
+                .startIntField(Component.literal("Watch items per cycle"), current.watchItemsPerWindowCap)
                 .setDefaultValue(3)
                 .setMin(1)
                 .setMax(20)
@@ -147,7 +165,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Page dwell (ms)"), current.pageDwellMs.toInt())
+                .startIntField(Component.literal("Page dwell (ms)"), current.pageDwellMs.toInt())
                 .setDefaultValue(500)
                 .setMin(100)
                 .setMax(5_000)
@@ -157,7 +175,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Watch cycle interval (ms)"), current.watchCycleIntervalMs.toInt())
+                .startIntField(Component.literal("Watch cycle interval (ms)"), current.watchCycleIntervalMs.toInt())
                 .setDefaultValue(60_000)
                 .setMin(5_000)
                 .setMax(600_000)
@@ -167,7 +185,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("General cycle interval (ms)"), current.generalCycleIntervalMs.toInt())
+                .startIntField(Component.literal("General cycle interval (ms)"), current.generalCycleIntervalMs.toInt())
                 .setDefaultValue(120_000)
                 .setMin(5_000)
                 .setMax(600_000)
@@ -177,7 +195,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Command min interval (ms)"), current.commandMinIntervalMs.toInt())
+                .startIntField(Component.literal("Command min interval (ms)"), current.commandMinIntervalMs.toInt())
                 .setDefaultValue(2_500)
                 .setMin(500)
                 .setMax(60_000)
@@ -187,7 +205,7 @@ object DonutsAuctionsConfigScreenFactory {
 
         automation.addEntry(
             entries
-                .startIntField(Text.literal("Page capture timeout (ms)"), current.pageCaptureTimeoutMs.toInt())
+                .startIntField(Component.literal("Page capture timeout (ms)"), current.pageCaptureTimeoutMs.toInt())
                 .setDefaultValue(2_500)
                 .setMin(500)
                 .setMax(15_000)

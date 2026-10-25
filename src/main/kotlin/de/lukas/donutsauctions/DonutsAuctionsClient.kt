@@ -1,6 +1,7 @@
 package de.lukas.donutsauctions
 
 import de.lukas.donutsauctions.config.DonutsAuctionsConfigManager
+import de.lukas.donutsauctions.api.DonutSmpApiImporter
 import de.lukas.donutsauctions.db.AuctionRepository
 import de.lukas.donutsauctions.db.SqliteAuctionRepository
 import de.lukas.donutsauctions.model.AhSearchContext
@@ -29,18 +30,16 @@ import de.lukas.donutsauctions.ui.DonutsAuctionsScreen
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.ChatScreen
-import net.minecraft.client.gui.screen.GameMenuScreen
-import net.minecraft.client.gui.screen.ingame.HandledScreen
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
-import net.minecraft.screen.GenericContainerScreenHandler
-import net.minecraft.screen.slot.SlotActionType
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.ChatScreen
+import net.minecraft.client.gui.screens.PauseScreen
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.KeyMapping
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.world.inventory.ChestMenu
 import org.slf4j.LoggerFactory
 import org.lwjgl.glfw.GLFW
 import java.nio.file.Path
@@ -58,13 +57,14 @@ object DonutsAuctionsClient : ClientModInitializer {
         private set
 
     private var repository: AuctionRepository? = null
+    @Volatile private var apiSyncRunning: Boolean = false
     private var captureService: AhCaptureService? = null
     private val commandParser = DefaultCommandQueryParser()
     private val deduplicator = SnapshotDeduplicator()
     private val idleTracker = PlayerIdleTracker()
     private val automationCoordinator = IdleAhAutomationCoordinator()
 
-    private lateinit var openGuiKey: KeyBinding
+    private lateinit var openGuiKey: KeyMapping
 
     @Volatile
     private var pendingSearchContext: AhSearchContext? = null
@@ -111,12 +111,12 @@ object DonutsAuctionsClient : ClientModInitializer {
         configManager.load()
         reloadConfiguration()
 
-        openGuiKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+        openGuiKey = KeyMappingHelper.registerKeyMapping(
+            KeyMapping(
                 "key.donutsauctions.open",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_KP_MULTIPLY,
-                KeyBinding.Category.create(Identifier.of(MOD_ID, "general"))
+                KeyMapping.Category.MISC
             )
         )
 
@@ -130,8 +130,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         })
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
-            while (openGuiKey.wasPressed()) {
-                client.setScreen(DonutsAuctionsScreen())
+            while (openGuiKey.consumeClick()) {
+                client.gui.setScreen(DonutsAuctionsScreen())
             }
             runCaptureTick(client)
             runAutomationTick(client)
@@ -206,7 +206,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun runCaptureTick(client: MinecraftClient) {
+    private fun runCaptureTick(client: Minecraft) {
         val config = configManager.config
         if (!config.trackingEnabled) {
             return
@@ -218,7 +218,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
 
         val now = System.currentTimeMillis()
-        val handledScreen = client.currentScreen as? HandledScreen<*>
+        val handledScreen = client.gui.screen() as? AbstractContainerScreen<*>
         val forcedTitle = if (handledScreen == null) resolveHeadlessCaptureTitle(client, now) else null
         if (handledScreen == null && forcedTitle == null) {
             if (auctionMenuOpen) {
@@ -260,7 +260,7 @@ object DonutsAuctionsClient : ClientModInitializer {
                         activateAutomationCooldown(now, stopReason)
                         automationCoordinator.requestStop(stopReason)
                         onHeadlessAuctionScreenClosed(stopReason)
-                        client.player?.closeHandledScreen()
+                        client.player?.closeContainer()
                         logDebug("Automation fail-safe triggered: closed screen due to unexpected non-AH menu")
                     }
                     if (auctionMenuOpen && result.reason.startsWith("Screen does not look like auction")) {
@@ -281,7 +281,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun runAutomationTick(client: MinecraftClient) {
+    private fun runAutomationTick(client: Minecraft) {
         if (!::configManager.isInitialized) {
             return
         }
@@ -298,19 +298,19 @@ object DonutsAuctionsClient : ClientModInitializer {
             return
         }
 
-        val serverHost = normalizeServerHost(client.currentServerEntry?.address)
+        val serverHost = normalizeServerHost(client.currentServer?.ip)
         val serverAllowed = isAllowedAutomationHost(serverHost)
         val serverLabel = serverHost ?: "singleplayer"
 
         idleTracker.update(player, now)
         val isIdle = idleTracker.isIdle(now, config.idleStartDelayMs)
         val idleRemainingMs = idleTracker.remainingIdleMs(now, config.idleStartDelayMs)
-        val currentScreen = client.currentScreen
-        val visibleHandledScreenOpen = currentScreen is HandledScreen<*>
+        val currentScreen = client.gui.screen()
+        val visibleHandledScreenOpen = currentScreen is AbstractContainerScreen<*>
         val headlessScreenOpen = isHeadlessAuctionHandlerOpen(client)
         val automationInventoryOpen = visibleHandledScreenOpen || headlessScreenOpen
         val isChatScreenOpen = currentScreen is ChatScreen
-        val isPauseMenuOpen = currentScreen is GameMenuScreen
+        val isPauseMenuOpen = currentScreen is PauseScreen
         val repositoryHealth = repositoryHealthSnapshot()
         val repositoryWritable = !repositoryHealth.readOnly
         val cooldownRemainingMs = (automationCooldownUntilMs - now).coerceAtLeast(0L)
@@ -374,11 +374,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         val captureObserved = activeJob?.let {
             lastCaptureAt >= it.pageStartedAtMs && activeQuery == it.query
         } ?: false
-        val nextPageControlAvailable = if (automationInventoryOpen) {
-            findNextPageSlotId(client) != null
-        } else {
-            false
-        }
+        // Page navigation is manual in this port; no simulated auction clicks.
+        val nextPageControlAvailable = false
 
         val action = automationCoordinator.tick(
             IdleAhAutomationCoordinator.TickInput(
@@ -433,47 +430,22 @@ object DonutsAuctionsClient : ClientModInitializer {
             }
             IdleAhAutomationCoordinator.Action.CloseHandledScreen -> {
                 onHeadlessAuctionScreenClosed("Automation requested close")
-                client.player?.closeHandledScreen()
+                client.player?.closeContainer()
                 logDebug("Automation closed handled screen to finish stop sequence")
             }
         }
     }
 
-    private fun dispatchAutomationCommand(client: MinecraftClient, commandNoSlash: String) {
+    private fun dispatchAutomationCommand(client: Minecraft, commandNoSlash: String) {
         val player = client.player ?: return
         automationExpectingHeadlessOpenUntilMs = System.currentTimeMillis() + HEADLESS_OPEN_EXPECT_TIMEOUT_MS
-        player.networkHandler.sendChatCommand(commandNoSlash)
+        player.connection.sendCommand(commandNoSlash)
         logDebug("Automation dispatched '/$commandNoSlash'")
     }
 
-    private fun clickNextPageControl(client: MinecraftClient) {
-        val player = client.player ?: return
-        val handler = player.currentScreenHandler ?: return
-        val slotId = findNextPageSlotId(client)
-        if (slotId == null) {
-            logDebug("Automation could not click next page: NEXT control missing")
-            return
-        }
-        client.interactionManager?.clickSlot(
-            handler.syncId,
-            slotId,
-            0,
-            SlotActionType.PICKUP,
-            player
-        )
-        logDebug("Automation clicked NEXT on slotId=$slotId")
-    }
-
-    private fun findNextPageSlotId(client: MinecraftClient): Int? {
-        val player = client.player ?: return null
-        val handler = player.currentScreenHandler ?: return null
-        val topSlotCount = if (handler is GenericContainerScreenHandler) {
-            handler.rows * 9
-        } else {
-            (handler.slots.size - 36).coerceAtLeast(0)
-        }
-        val topSlots = handler.slots.take(topSlotCount)
-        return AhNextControlLocator.findStrictNextSlotId(topSlots)
+    private fun clickNextPageControl(client: Minecraft) {
+        // Automated inventory clicking is intentionally disabled in this port.
+        logDebug("Automatic page clicking is disabled; navigate auction pages manually.")
     }
 
     private fun loadNormalizedWatchTerms(): List<String> {
@@ -514,8 +486,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         return normalized == "donutsmp.com" || normalized.endsWith(".donutsmp.com")
     }
 
-    internal fun isAllowedAutomationServer(client: MinecraftClient = MinecraftClient.getInstance()): Boolean {
-        return isAllowedAutomationHost(normalizeServerHost(client.currentServerEntry?.address))
+    internal fun isAllowedAutomationServer(client: Minecraft = Minecraft.getInstance()): Boolean {
+        return isAllowedAutomationHost(normalizeServerHost(client.currentServer?.ip))
     }
 
     fun shouldSuppressAuctionScreenOpen(packetTitle: String): Boolean {
@@ -549,12 +521,12 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun resolveHeadlessCaptureTitle(client: MinecraftClient, now: Long): String? {
+    private fun resolveHeadlessCaptureTitle(client: Minecraft, now: Long): String? {
         val title = activeHeadlessAuctionTitle ?: return null
         val expectedSyncId = activeHeadlessAuctionSyncId ?: return null
-        val handler = client.player?.currentScreenHandler ?: return null
-        if (handler.syncId != expectedSyncId) {
-            val reason = "Automation headless sync mismatch (expected=$expectedSyncId, actual=${handler.syncId})"
+        val handler = client.player?.containerMenu ?: return null
+        if (handler.containerId != expectedSyncId) {
+            val reason = "Automation headless sync mismatch (expected=$expectedSyncId, actual=${handler.containerId})"
             activateAutomationCooldown(now, reason)
             automationCoordinator.requestStop(reason)
             onHeadlessAuctionScreenClosed(reason)
@@ -564,8 +536,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         return title
     }
 
-    private fun isHeadlessAuctionHandlerOpen(client: MinecraftClient): Boolean {
-        if (client.currentScreen is HandledScreen<*>) {
+    private fun isHeadlessAuctionHandlerOpen(client: Minecraft): Boolean {
+        if (client.gui.screen() is AbstractContainerScreen<*>) {
             return false
         }
         val title = activeHeadlessAuctionTitle ?: return false
@@ -573,8 +545,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         if (title.isBlank()) {
             return false
         }
-        val handler = client.player?.currentScreenHandler ?: return false
-        return handler.syncId == expectedSyncId
+        val handler = client.player?.containerMenu ?: return false
+        return handler.containerId == expectedSyncId
     }
 
     private fun activateAutomationCooldown(now: Long, reason: String) {
@@ -645,7 +617,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun currentServerId(): String {
-        return MinecraftClient.getInstance().currentServerEntry?.address ?: "singleplayer"
+        return Minecraft.getInstance().currentServer?.ip ?: "singleplayer"
     }
 
     private fun logNoop(reason: String, now: Long) {
@@ -725,6 +697,41 @@ object DonutsAuctionsClient : ClientModInitializer {
     @Synchronized
     fun isRepositoryWritable(): Boolean {
         return !repositoryHealthSnapshot().readOnly
+    }
+
+    fun syncApiListings(onComplete: (String) -> Unit) {
+        val config = configManager.config
+        if (config.apiKey.isBlank()) {
+            onComplete("API key missing: set it in Mod Config first")
+            return
+        }
+        if (apiSyncRunning) {
+            onComplete("API sync is already running")
+            return
+        }
+        val repo = repository
+        if (repo == null) {
+            onComplete("Database is unavailable")
+            return
+        }
+
+        apiSyncRunning = true
+        Thread({
+            val result = try {
+                val count = DonutSmpApiImporter(repo, config.apiKey).importPages(config.apiImportPages)
+                "API sync complete: imported $count listings"
+            } catch (ex: Exception) {
+                logger.error("DonutSMP API import failed", ex)
+                "API sync failed: ${ex.message ?: ex.javaClass.simpleName}"
+            }
+            Minecraft.getInstance().execute {
+                apiSyncRunning = false
+                onComplete(result)
+            }
+        }, "DonutsAuctions-API-Sync").apply {
+            isDaemon = true
+            start()
+        }
     }
 
     @Synchronized

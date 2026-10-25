@@ -1,7 +1,7 @@
 package de.lukas.donutsauctions.scanner
 
-import net.minecraft.item.Items
-import net.minecraft.screen.slot.Slot
+import net.minecraft.world.item.Items
+import net.minecraft.world.inventory.Slot
 
 object AhNextControlLocator {
 
@@ -23,13 +23,13 @@ object AhNextControlLocator {
 
     internal fun findStrictNextCandidate(topSlots: List<Slot>): Candidate? {
         val candidates = topSlots.mapIndexed { position, slot ->
-            val stack = slot.stack
+            val stack = slot.item
             Candidate(
                 topPosition = position,
-                slotId = slot.id,
+                slotId = slot.index,
                 slotIndex = slot.index,
                 isArrow = !stack.isEmpty && stack.item == Items.ARROW,
-                displayName = sanitizeLabel(stack.name.string)
+                displayName = sanitizeLabel(stack.hoverName.string)
             )
         }
         return selectStrictNextCandidate(topSlots.size, candidates)
