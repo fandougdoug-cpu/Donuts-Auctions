@@ -129,7 +129,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         })
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
-            while (openGuiKey.wasPressed()) {
+            while (openGuiKey.consumeClick()) {
                 client.setScreen(DonutsAuctionsScreen())
             }
             runCaptureTick(client)
@@ -217,7 +217,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
 
         val now = System.currentTimeMillis()
-        val handledScreen = client.currentScreen as? HandledScreen<*>
+        val handledScreen = client.screen as? HandledScreen<*>
         val forcedTitle = if (handledScreen == null) resolveHeadlessCaptureTitle(client, now) else null
         if (handledScreen == null && forcedTitle == null) {
             if (auctionMenuOpen) {
