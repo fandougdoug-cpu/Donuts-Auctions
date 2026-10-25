@@ -33,8 +33,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screen.ChatScreen
-import net.minecraft.client.gui.screen.GameMenuScreen
+import net.minecraft.client.gui.screens.ChatScreen
+import net.minecraft.client.gui.screens.GameMenuScreen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.KeyMapping
 import com.mojang.blaze3d.platform.InputConstants
