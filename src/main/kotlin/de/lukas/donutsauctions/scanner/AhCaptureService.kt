@@ -197,7 +197,7 @@ class AhCaptureService(
         val totalPrice = priceParser.parseFirstPrice(loreLines)
         val amount = stack.count.coerceAtLeast(1)
         val unitPrice = totalPrice?.toDouble()?.div(amount)
-        val itemId = Registries.ITEM.getId(stack.item).toString()
+        val itemId = BuiltInRegistries.ITEM.getKey(stack.item).toString()
         val displayName = sanitize(stack.hoverName.string)
         val itemSignature = signatureBuilder.build(
             itemId = itemId,
