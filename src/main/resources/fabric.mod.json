@@ -3,16 +3,16 @@
   "id": "donutsauctions",
   "version": "${version}",
   "name": "DonutsAuctions",
-  "description": "Passive auction tracker for DonutSMP with local SQLite storage and best-deal scouting.",
-  "icon":  "assets/donutsauctions/AutionMaster-Icon.jpeg",
+  "description": "Client-side DonutSMP auction price history, deal alerts, and investment calculators.",
+  "icon": "assets/donutsauctions/AutionMaster-Icon.jpeg",
   "authors": [
-    "cancelcloud"
+    "cancelcloud",
+    "fandougdoug-cpu"
   ],
   "contact": {
-    "homepage": "https://github.com/cancel-cloud/Donuts-Auctions",
-    "issues": "https://github.com/cancel-cloud/Donuts-Auctions/issues",
-    "sources": "https://github.com/cancel-cloud/Donuts-Auctions"
-
+    "homepage": "https://github.com/fandougdoug-cpu/Donuts-Auctions",
+    "issues": "https://github.com/fandougdoug-cpu/Donuts-Auctions/issues",
+    "sources": "https://github.com/fandougdoug-cpu/Donuts-Auctions"
   },
   "license": "MIT",
   "environment": "client",
@@ -35,13 +35,6 @@
     "minecraft": "~${minecraft_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
     "modmenu": ">=${modmenu_version}",
-    "cloth-config2": ">=17.0.0"
-  },
-  "custom": {
-    "modmenu": {
-      "links": {
-        "modmenu.discord": "https://discord.gg/modrinth"
-      }
-    }
+    "cloth-config2": ">=${cloth_config_version}"
   }
 }
