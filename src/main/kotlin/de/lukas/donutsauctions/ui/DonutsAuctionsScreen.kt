@@ -29,7 +29,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
+class DonutsAuctionsScreen : Screen(Component.literal("DonutsAuctions")) {
 
     private enum class ViewMode { SEARCH, DEALS }
     private enum class SortMode { BEST_DEAL, MIN_PRICE, SAMPLES, RECENT, NAME }
@@ -64,30 +64,30 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         val showRepairLine: Boolean
     )
 
-    private lateinit var searchField: TextFieldWidget
-    private lateinit var searchButton: ButtonWidget
-    private lateinit var modeButton: ButtonWidget
-    private lateinit var refreshButton: ButtonWidget
-    private lateinit var configButton: ButtonWidget
+    private lateinit var searchField: EditBox
+    private lateinit var searchButton: Button
+    private lateinit var modeButton: Button
+    private lateinit var refreshButton: Button
+    private lateinit var configButton: Button
 
-    private lateinit var sortButton: ButtonWidget
-    private lateinit var filterButton: ButtonWidget
-    private lateinit var lookbackButton: ButtonWidget
-    private lateinit var stackButton: ButtonWidget
+    private lateinit var sortButton: Button
+    private lateinit var filterButton: Button
+    private lateinit var lookbackButton: Button
+    private lateinit var stackButton: Button
 
-    private lateinit var tabOverviewButton: ButtonWidget
-    private lateinit var tabTrendsButton: ButtonWidget
-    private lateinit var tabSellersButton: ButtonWidget
-    private lateinit var watchButton: ButtonWidget
-    private lateinit var trend25hButton: ButtonWidget
-    private lateinit var trend7dButton: ButtonWidget
-    private lateinit var trend30dButton: ButtonWidget
+    private lateinit var tabOverviewButton: Button
+    private lateinit var tabTrendsButton: Button
+    private lateinit var tabSellersButton: Button
+    private lateinit var watchButton: Button
+    private lateinit var trend25hButton: Button
+    private lateinit var trend7dButton: Button
+    private lateinit var trend30dButton: Button
 
-    private lateinit var devToggleButton: ButtonWidget
-    private lateinit var exportCsvButton: ButtonWidget
-    private lateinit var exportJsonButton: ButtonWidget
-    private lateinit var rebuildButton: ButtonWidget
-    private lateinit var vacuumButton: ButtonWidget
+    private lateinit var devToggleButton: Button
+    private lateinit var exportCsvButton: Button
+    private lateinit var exportJsonButton: Button
+    private lateinit var rebuildButton: Button
+    private lateinit var vacuumButton: Button
 
     private val stackOptions = listOf(1, 16, 64)
     private var stackIndex = 0
@@ -116,7 +116,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
     private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
     private val rowHeight: Int
-        get() = DonutsAuctionsScreenLayoutMath.computeRowHeight(textRenderer.fontHeight)
+        get() = DonutsAuctionsScreenLayoutMath.computeRowHeight(font.fontHeight)
 
     override fun init() {
         val compact = isCompactLayout()
@@ -126,78 +126,78 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         val rowBY = 60
 
         val searchWidth = if (compact) 180 else 280
-        searchField = TextFieldWidget(textRenderer, margin, rowAY, searchWidth, 20, Text.literal("Search"))
+        searchField = EditBox(font, margin, rowAY, searchWidth, 20, Component.literal("Search"))
         searchField.setMaxLength(120)
 
         var x = margin + searchWidth + gap
-        searchButton = ButtonWidget.builder(Text.literal("Search")) { performSearch() }
+        searchButton = Button.builder(Component.literal("Search")) { performSearch() }
             .dimensions(x, rowAY, if (compact) 78 else 88, 20)
             .build()
         x += if (compact) 84 else 94
 
-        modeButton = ButtonWidget.builder(Text.literal("")) { cycleViewMode() }
+        modeButton = Button.builder(Component.literal("")) { cycleViewMode() }
             .dimensions(x, rowAY, if (compact) 154 else 172, 20)
             .build()
         x += if (compact) 160 else 178
 
-        refreshButton = ButtonWidget.builder(Text.literal("Refresh")) { refreshData() }
+        refreshButton = Button.builder(Component.literal("Refresh")) { refreshData() }
             .dimensions(x, rowAY, if (compact) 92 else 100, 20)
             .build()
 
-        configButton = ButtonWidget.builder(Text.literal(if (compact) "Config" else "Mod Config")) {
+        configButton = Button.builder(Component.literal(if (compact) "Config" else "Mod Config")) {
             client?.setScreen(DonutsAuctionsConfigScreenFactory.create(this))
         }.dimensions(width - if (compact) 96 else 118, rowAY, if (compact) 76 else 98, 20).build()
 
-        sortButton = ButtonWidget.builder(Text.literal("")) { cycleSortMode() }
+        sortButton = Button.builder(Component.literal("")) { cycleSortMode() }
             .dimensions(margin, rowBY, if (compact) 128 else 138, 20)
             .build()
-        filterButton = ButtonWidget.builder(Text.literal("")) { cycleFilterMode() }
+        filterButton = Button.builder(Component.literal("")) { cycleFilterMode() }
             .dimensions(margin + if (compact) 134 else 144, rowBY, if (compact) 126 else 134, 20)
             .build()
-        lookbackButton = ButtonWidget.builder(Text.literal("")) { toggleLookback() }
+        lookbackButton = Button.builder(Component.literal("")) { toggleLookback() }
             .dimensions(margin + if (compact) 266 else 284, rowBY, if (compact) 128 else 138, 20)
             .build()
-        stackButton = ButtonWidget.builder(Text.literal("")) { cycleStackSize() }
+        stackButton = Button.builder(Component.literal("")) { cycleStackSize() }
             .dimensions(margin + if (compact) 400 else 428, rowBY, if (compact) 120 else 128, 20)
             .build()
 
         val details = detailsPanelBounds()
-        tabOverviewButton = ButtonWidget.builder(Text.literal("Overview")) { switchTab(DetailTab.OVERVIEW) }
+        tabOverviewButton = Button.builder(Component.literal("Overview")) { switchTab(DetailTab.OVERVIEW) }
             .dimensions(details.left + 8, details.top + 4, 74, 16)
             .build()
-        tabTrendsButton = ButtonWidget.builder(Text.literal("Trends")) { switchTab(DetailTab.TRENDS) }
+        tabTrendsButton = Button.builder(Component.literal("Trends")) { switchTab(DetailTab.TRENDS) }
             .dimensions(details.left + 86, details.top + 4, 62, 16)
             .build()
-        tabSellersButton = ButtonWidget.builder(Text.literal("Sellers")) { switchTab(DetailTab.SELLERS) }
+        tabSellersButton = Button.builder(Component.literal("Sellers")) { switchTab(DetailTab.SELLERS) }
             .dimensions(details.left + 152, details.top + 4, 62, 16)
             .build()
-        watchButton = ButtonWidget.builder(Text.literal("☆ Watch")) { toggleWatchSelected() }
+        watchButton = Button.builder(Component.literal("☆ Watch")) { toggleWatchSelected() }
             .dimensions(details.right - 94, details.top + 4, 86, 16)
             .build()
-        trend25hButton = ButtonWidget.builder(Text.literal("25h")) { switchTrendWindow(TrendWindow.H25) }
+        trend25hButton = Button.builder(Component.literal("25h")) { switchTrendWindow(TrendWindow.H25) }
             .dimensions(details.left + 220, details.top + 4, 38, 16)
             .build()
-        trend7dButton = ButtonWidget.builder(Text.literal("7d")) { switchTrendWindow(TrendWindow.D7) }
+        trend7dButton = Button.builder(Component.literal("7d")) { switchTrendWindow(TrendWindow.D7) }
             .dimensions(details.left + 262, details.top + 4, 34, 16)
             .build()
-        trend30dButton = ButtonWidget.builder(Text.literal("30d")) { switchTrendWindow(TrendWindow.D30) }
+        trend30dButton = Button.builder(Component.literal("30d")) { switchTrendWindow(TrendWindow.D30) }
             .dimensions(details.left + 300, details.top + 4, 42, 16)
             .build()
 
-        devToggleButton = ButtonWidget.builder(Text.literal("Dev")) { toggleDevMode() }
+        devToggleButton = Button.builder(Component.literal("Dev")) { toggleDevMode() }
             .dimensions(width - 58, height - 26, 42, 16)
             .build()
 
-        exportCsvButton = ButtonWidget.builder(Text.literal("CSV")) { exportCsv() }
+        exportCsvButton = Button.builder(Component.literal("CSV")) { exportCsv() }
             .dimensions(width - 262, height - 26, 46, 16)
             .build()
-        exportJsonButton = ButtonWidget.builder(Text.literal("JSON")) { exportJson() }
+        exportJsonButton = Button.builder(Component.literal("JSON")) { exportJson() }
             .dimensions(width - 212, height - 26, 52, 16)
             .build()
-        rebuildButton = ButtonWidget.builder(Text.literal("Reindex")) { rebuildIndexes() }
+        rebuildButton = Button.builder(Component.literal("Reindex")) { rebuildIndexes() }
             .dimensions(width - 156, height - 26, 64, 16)
             .build()
-        vacuumButton = ButtonWidget.builder(Text.literal("Vacuum")) { vacuumDb() }
+        vacuumButton = Button.builder(Component.literal("Vacuum")) { vacuumDb() }
             .dimensions(width - 88, height - 26, 64, 16)
             .build()
 
@@ -233,13 +233,13 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         performSearch()
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val layout = computeLayoutMetrics()
 
         context.fill(0, 0, width, height, 0x88000000.toInt())
-        context.drawText(textRenderer, title, 20, 14, color(0xFFFFFF), true)
+        context.drawString(font, title, 20, 14, color(0xFFFFFF), true)
         drawStatusBanner(context, layout)
-        context.drawText(textRenderer, Text.literal(statusLine), 20, layout.statusTextY, color(0xD0D0D0), false)
+        context.drawString(font, Component.literal(statusLine), 20, layout.statusTextY, color(0xD0D0D0), false)
 
         drawResultsPanel(context, mouseX, mouseY, layout)
         drawDetailPanel(context, layout)
@@ -247,7 +247,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         super.render(context, mouseX, mouseY, delta)
     }
 
-    override fun keyPressed(input: KeyInput): Boolean {
+    override fun keyPressed(input: KeyEvent): Boolean {
         val keyCode = input.key()
         if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
             performSearch()
@@ -256,7 +256,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         return super.keyPressed(input)
     }
 
-    override fun mouseClicked(click: Click, doubled: Boolean): Boolean {
+    override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         if (super.mouseClicked(click, doubled)) {
             return true
         }
@@ -552,20 +552,20 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
     }
 
     private fun updateButtonLabels() {
-        modeButton.message = Text.literal("Mode: ${if (viewMode == ViewMode.SEARCH) "Search" else "Deals"} (*)")
-        sortButton.message = Text.literal("Sort: ${sortModeShort(sortMode)} (*)")
-        filterButton.message = Text.literal("Filter: ${if (filterMode == FilterMode.ALL) "All" else "Watch"} (*)")
-        lookbackButton.message = Text.literal("Window: ${if (lookbackDays == 0) "All" else "30d"} (*)")
-        stackButton.message = Text.literal("Stack: x${currentStackSize()} (*)")
+        modeButton.message = Component.literal("Mode: ${if (viewMode == ViewMode.SEARCH) "Search" else "Deals"} (*)")
+        sortButton.message = Component.literal("Sort: ${sortModeShort(sortMode)} (*)")
+        filterButton.message = Component.literal("Filter: ${if (filterMode == FilterMode.ALL) "All" else "Watch"} (*)")
+        lookbackButton.message = Component.literal("Window: ${if (lookbackDays == 0) "All" else "30d"} (*)")
+        stackButton.message = Component.literal("Stack: x${currentStackSize()} (*)")
 
-        tabOverviewButton.message = Text.literal(if (detailTab == DetailTab.OVERVIEW) "[Overview]" else "Overview")
-        tabTrendsButton.message = Text.literal(if (detailTab == DetailTab.TRENDS) "[Trends]" else "Trends")
-        tabSellersButton.message = Text.literal(if (detailTab == DetailTab.SELLERS) "[Sellers]" else "Sellers")
-        trend25hButton.message = Text.literal(if (trendWindow == TrendWindow.H25) "[25h]" else "25h")
-        trend7dButton.message = Text.literal(if (trendWindow == TrendWindow.D7) "[7d]" else "7d")
-        trend30dButton.message = Text.literal(if (trendWindow == TrendWindow.D30) "[30d]" else "30d")
+        tabOverviewButton.message = Component.literal(if (detailTab == DetailTab.OVERVIEW) "[Overview]" else "Overview")
+        tabTrendsButton.message = Component.literal(if (detailTab == DetailTab.TRENDS) "[Trends]" else "Trends")
+        tabSellersButton.message = Component.literal(if (detailTab == DetailTab.SELLERS) "[Sellers]" else "Sellers")
+        trend25hButton.message = Component.literal(if (trendWindow == TrendWindow.H25) "[25h]" else "25h")
+        trend7dButton.message = Component.literal(if (trendWindow == TrendWindow.D7) "[7d]" else "7d")
+        trend30dButton.message = Component.literal(if (trendWindow == TrendWindow.D30) "[30d]" else "30d")
 
-        devToggleButton.message = Text.literal("Dev")
+        devToggleButton.message = Component.literal("Dev")
     }
 
     private fun updateControlState() {
@@ -581,10 +581,10 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         watchButton.visible = watchVisible
         watchButton.active = watchVisible && hasSelection && writable
         watchButton.message = when {
-            !hasSelection -> Text.literal("☆ Watch")
-            !writable -> Text.literal("☆ Watch")
-            isWatched(selectedRow!!.itemId, selectedRow!!.itemSignature) -> Text.literal("★ Watched")
-            else -> Text.literal("☆ Watch")
+            !hasSelection -> Component.literal("☆ Watch")
+            !writable -> Component.literal("☆ Watch")
+            isWatched(selectedRow!!.itemId, selectedRow!!.itemSignature) -> Component.literal("★ Watched")
+            else -> Component.literal("☆ Watch")
         }
 
         val trendButtonsVisible = detailTab == DetailTab.TRENDS
@@ -616,7 +616,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         devModeEnabled = config.devModeEnabled
     }
 
-    private fun drawStatusBanner(context: DrawContext, layout: LayoutMetrics) {
+    private fun drawStatusBanner(context: GuiGraphics, layout: LayoutMetrics) {
         val health = DonutsAuctionsClient.repositoryHealthSnapshot()
 
         val (fillColor, title, textColor, message) = when (health.status) {
@@ -628,7 +628,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         context.fill(20, layout.statusBannerTopY, width - 20, layout.statusBannerBottomY, fillColor)
         context.fill(20, layout.statusBannerTopY, width - 20, layout.statusBannerTopY + 1, 0x88FFFFFF.toInt())
 
-        context.drawText(textRenderer, Text.literal(title), 26, layout.statusBannerTopY + 6, color(textColor), false)
+        context.drawString(font, Component.literal(title), 26, layout.statusBannerTopY + 6, color(textColor), false)
         drawClampedText(
             context,
             message,
@@ -639,13 +639,13 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         )
     }
 
-    private fun drawResultsPanel(context: DrawContext, mouseX: Int, mouseY: Int, layout: LayoutMetrics) {
+    private fun drawResultsPanel(context: GuiGraphics, mouseX: Int, mouseY: Int, layout: LayoutMetrics) {
         val panel = resultsPanelBounds(layout)
         drawPanel(context, panel.left, panel.top, panel.right, panel.bottom)
-        context.drawText(textRenderer, Text.literal("Results"), panel.left + 6, panel.top + 6, color(0xFFFFFF), false)
+        context.drawString(font, Component.literal("Results"), panel.left + 6, panel.top + 6, color(0xFFFFFF), false)
 
         if (panel.height < rowHeight + 28) {
-            context.drawText(textRenderer, Text.literal("Window too small for results"), panel.left + 6, panel.top + 24, color(0xB8B8B8), false)
+            context.drawString(font, Component.literal("Window too small for results"), panel.left + 6, panel.top + 24, color(0xB8B8B8), false)
             return
         }
 
@@ -656,7 +656,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
                 EmptyState.BACKEND_UNAVAILABLE -> "Backend unavailable (see DB status above)"
                 EmptyState.NONE -> ""
             }
-            context.drawText(textRenderer, Text.literal(text), panel.left + 6, panel.top + 26, color(0xB8B8B8), false)
+            context.drawString(font, Component.literal(text), panel.left + 6, panel.top + 26, color(0xB8B8B8), false)
             return
         }
 
@@ -678,7 +678,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
                 context.fill(panel.left + 2, y, panel.right - 2, y + rowHeight - 2, bg)
 
                 val iconY = y + ((rowHeight - 16) / 2).coerceAtLeast(0)
-                context.drawItem(resolveItemIcon(item.itemId), panel.left + 6, iconY)
+                context.renderItem(resolveItemIcon(item.itemId), panel.left + 6, iconY)
                 val watchPrefix = if (isWatched(item.itemId, item.itemSignature)) "★ " else ""
                 drawClampedText(
                     context,
@@ -698,7 +698,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
                     context,
                     subtitle,
                     panel.left + 26,
-                    y + 3 + textRenderer.fontHeight + 2,
+                    y + 3 + font.fontHeight + 2,
                     panel.width - 34,
                     color(0xAFC7E4)
                 )
@@ -707,9 +707,9 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
 
         if (rows.isNotEmpty()) {
             val visibleRangeEnd = (resultScroll + visibleRows).coerceAtMost(rows.size)
-            context.drawText(
-                textRenderer,
-                Text.literal("${resultScroll + 1}-${visibleRangeEnd} / ${rows.size}"),
+            context.drawString(
+                font,
+                Component.literal("${resultScroll + 1}-${visibleRangeEnd} / ${rows.size}"),
                 panel.left + 6,
                 panel.bottom - 12,
                 color(0xA0A0A0),
@@ -718,19 +718,19 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawDetailPanel(context: DrawContext, layout: LayoutMetrics) {
+    private fun drawDetailPanel(context: GuiGraphics, layout: LayoutMetrics) {
         val panel = detailsPanelBounds(layout)
         drawPanel(context, panel.left, panel.top, panel.right, panel.bottom)
         val tabStripBottom = panel.top + 24
 
         if (panel.height < 110) {
-            context.drawText(textRenderer, Text.literal("Window too small for details"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
+            context.drawString(font, Component.literal("Window too small for details"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
             return
         }
 
         val selected = selectedRow
         if (selected == null) {
-            context.drawText(textRenderer, Text.literal("Select an item from the list"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
+            context.drawString(font, Component.literal("Select an item from the list"), panel.left + 10, panel.top + 28, color(0xA0A0A0), false)
             return
         }
 
@@ -743,21 +743,21 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawOverviewTab(context: DrawContext, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+    private fun drawOverviewTab(context: GuiGraphics, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
         val left = panel.left + 8
         val right = panel.right - 8
         val contentWidth = (right - left).coerceAtLeast(1)
         var cursorY = contentTop + 4
 
         drawSectionCard(context, left, cursorY, right, cursorY + 38, "Item")
-        context.drawItem(resolveItemIcon(selected.itemId), left + 6, cursorY + 16)
+        context.renderItem(resolveItemIcon(selected.itemId), left + 6, cursorY + 16)
         drawClampedText(context, selected.displayName, left + 26, cursorY + 16, contentWidth - 34, color(0xF0F0F0))
         drawClampedText(context, shortItemId(selected.itemId), left + 26, cursorY + 26, contentWidth - 34, color(0x9FB4CF))
         cursorY += 44
 
         val stats = selectedStats
         if (stats == null) {
-            context.drawText(textRenderer, Text.literal("No priced samples in this window"), left, cursorY + 8, color(0xFF9E9E), false)
+            context.drawString(font, Component.literal("No priced samples in this window"), left, cursorY + 8, color(0xFF9E9E), false)
             return
         }
 
@@ -775,27 +775,27 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
             val rightValueWidth = (right - rightValueX - 8).coerceAtLeast(40)
             var y = overviewTop + 16
 
-            context.drawText(textRenderer, Text.literal("Samples"), leftLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Samples"), leftLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, stats.sampleCount.toString(), leftValueX, y, leftValueWidth, color(0xEAEAEA))
-            context.drawText(textRenderer, Text.literal("Last seen"), rightLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Last seen"), rightLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatTimestamp(stats.lastSeenAt), rightValueX, y, rightValueWidth, color(0xEAEAEA))
             y += 14
 
-            context.drawText(textRenderer, Text.literal("Unit min"), leftLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit min"), leftLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.minUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
-            context.drawText(textRenderer, Text.literal("Stack min"), rightLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Stack min"), rightLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.minStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
             y += 14
 
-            context.drawText(textRenderer, Text.literal("Unit avg"), leftLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit avg"), leftLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.avgUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
-            context.drawText(textRenderer, Text.literal("Stack avg"), rightLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Stack avg"), rightLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.avgStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
             y += 14
 
-            context.drawText(textRenderer, Text.literal("Unit med"), leftLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit med"), leftLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.medianUnitPrice), leftValueX, y, leftValueWidth, color(0x9EE09E))
-            context.drawText(textRenderer, Text.literal("Stack x${stats.stackSize}"), rightLabelX, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Stack x${stats.stackSize}"), rightLabelX, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.medianStackPrice), rightValueX, y, rightValueWidth, color(0xFFD37F))
         } else {
             val lx = left + 8
@@ -803,22 +803,22 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
             val width = (right - vx - 8).coerceAtLeast(40)
             var y = overviewTop + 16
 
-            context.drawText(textRenderer, Text.literal("Samples"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Samples"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, stats.sampleCount.toString(), vx, y, width, color(0xEAEAEA))
             y += 12
-            context.drawText(textRenderer, Text.literal("Last seen"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Last seen"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, formatTimestamp(stats.lastSeenAt), vx, y, width, color(0xEAEAEA))
             y += 12
-            context.drawText(textRenderer, Text.literal("Unit min"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit min"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.minUnitPrice), vx, y, width, color(0x9EE09E))
             y += 12
-            context.drawText(textRenderer, Text.literal("Unit avg"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit avg"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.avgUnitPrice), vx, y, width, color(0x9EE09E))
             y += 12
-            context.drawText(textRenderer, Text.literal("Unit med"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Unit med"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.medianUnitPrice), vx, y, width, color(0x9EE09E))
             y += 12
-            context.drawText(textRenderer, Text.literal("Stack x${stats.stackSize}"), lx, y, color(0xAFC7E4), false)
+            context.drawString(font, Component.literal("Stack x${stats.stackSize}"), lx, y, color(0xAFC7E4), false)
             drawClampedText(context, formatCoins(stats.medianStackPrice), vx, y, width, color(0xFFD37F))
         }
 
@@ -850,10 +850,10 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         val colAge = tableRight - 46
 
         val yHeader = listTop + 16
-        context.drawText(textRenderer, Text.literal("Unit"), colUnit, yHeader, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Amount"), colAmount, yHeader, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Seller"), colSeller, yHeader, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Age"), colAge, yHeader, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Unit"), colUnit, yHeader, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Amount"), colAmount, yHeader, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Seller"), colSeller, yHeader, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Age"), colAge, yHeader, color(0xC9D5EA), false)
 
         var y = yHeader + 12
         val maxRows = ((panel.bottom - 12 - y) / 10).coerceAtLeast(1)
@@ -866,7 +866,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawTrendsTab(context: DrawContext, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+    private fun drawTrendsTab(context: GuiGraphics, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
         val left = panel.left + 8
         val right = panel.right - 8
         val contentWidth = (right - left).coerceAtLeast(1)
@@ -877,7 +877,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
 
         val series = selectedTrendSeries
         if (series == null || series.points.isEmpty()) {
-            context.drawText(textRenderer, Text.literal("Trend data unavailable for ${trendWindow.label}"), left, contentTop + 56, color(0xFF9E9E), false)
+            context.drawString(font, Component.literal("Trend data unavailable for ${trendWindow.label}"), left, contentTop + 56, color(0xFF9E9E), false)
             return
         }
 
@@ -898,10 +898,10 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         val colSamples = tableRight - 56
 
         var y = rawTop + 16
-        context.drawText(textRenderer, Text.literal("Time"), colTime, y, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Min"), colMin, y, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Median"), colMedian, y, color(0xC9D5EA), false)
-        context.drawText(textRenderer, Text.literal("Samples"), colSamples, y, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Time"), colTime, y, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Min"), colMin, y, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Median"), colMedian, y, color(0xC9D5EA), false)
+        context.drawString(font, Component.literal("Samples"), colSamples, y, color(0xC9D5EA), false)
         y += 12
 
         val maxRows = ((panel.bottom - 12 - y) / 10).coerceAtLeast(1)
@@ -914,7 +914,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawSellersTab(context: DrawContext, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
+    private fun drawSellersTab(context: GuiGraphics, panel: PanelBounds, selected: ResultRow, contentTop: Int) {
         val left = panel.left + 8
         val right = panel.right - 8
         val contentWidth = (right - left).coerceAtLeast(1)
@@ -934,15 +934,15 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
             val colAvg = left + (contentWidth * 0.64).toInt().coerceAtLeast(290)
             val colLast = left + (contentWidth * 0.79).toInt().coerceAtLeast(354)
 
-            context.drawText(textRenderer, Text.literal("Seller"), colSeller, y, color(0xC9D5EA), false)
-            context.drawText(textRenderer, Text.literal("Count"), colCount, y, color(0xC9D5EA), false)
-            context.drawText(textRenderer, Text.literal("Min"), colMin, y, color(0xC9D5EA), false)
-            context.drawText(textRenderer, Text.literal("Avg"), colAvg, y, color(0xC9D5EA), false)
-            context.drawText(textRenderer, Text.literal("Last"), colLast, y, color(0xC9D5EA), false)
+            context.drawString(font, Component.literal("Seller"), colSeller, y, color(0xC9D5EA), false)
+            context.drawString(font, Component.literal("Count"), colCount, y, color(0xC9D5EA), false)
+            context.drawString(font, Component.literal("Min"), colMin, y, color(0xC9D5EA), false)
+            context.drawString(font, Component.literal("Avg"), colAvg, y, color(0xC9D5EA), false)
+            context.drawString(font, Component.literal("Last"), colLast, y, color(0xC9D5EA), false)
             y += 12
 
             if (selectedSellers.isEmpty()) {
-                context.drawText(textRenderer, Text.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
+                context.drawString(font, Component.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
                 return
             }
 
@@ -957,7 +957,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
             }
         } else {
             if (selectedSellers.isEmpty()) {
-                context.drawText(textRenderer, Text.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
+                context.drawString(font, Component.literal("No seller stats available"), left + 8, y, color(0xA0A0A0), false)
                 return
             }
             val maxRows = ((panel.bottom - 12 - y) / 20).coerceAtLeast(1)
@@ -970,7 +970,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawTrendGraph(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int, points: List<TrendSeriesPoint>) {
+    private fun drawTrendGraph(context: GuiGraphics, left: Int, top: Int, right: Int, bottom: Int, points: List<TrendSeriesPoint>) {
         if (right - left < 40 || bottom - top < 30 || points.isEmpty()) {
             return
         }
@@ -1038,7 +1038,7 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         )
     }
 
-    private fun drawFooter(context: DrawContext, layout: LayoutMetrics) {
+    private fun drawFooter(context: GuiGraphics, layout: LayoutMetrics) {
         val health = DonutsAuctionsClient.repositoryHealthSnapshot()
         val foot = when {
             devModeEnabled && !DonutsAuctionsClient.isRepositoryWritable() -> "Dev mode ON • DB read-only (maintenance disabled)"
@@ -1052,32 +1052,32 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         var y = height - layout.footerReservedHeight + 8
         if (layout.showRepairLine && health.lastMigrationSummary != null) {
             val summary = health.lastMigrationSummary
-            context.drawText(
-                textRenderer,
-                Text.literal("repair: dup ${summary.duplicatesRemoved}, shulker ${summary.shulkerRowsRemoved}, legacy ${summary.legacyRowsRemoved}, orphan ${summary.orphanSnapshotsRemoved}"),
+            context.drawString(
+                font,
+                Component.literal("repair: dup ${summary.duplicatesRemoved}, shulker ${summary.shulkerRowsRemoved}, legacy ${summary.legacyRowsRemoved}, orphan ${summary.orphanSnapshotsRemoved}"),
                 20,
                 y,
                 color(0x7D8DA7),
                 false
             )
-            y += textRenderer.fontHeight + 2
+            y += font.fontHeight + 2
         }
 
-        context.drawText(textRenderer, Text.literal(foot), 20, y, color(0x8FA0BA), false)
+        context.drawString(font, Component.literal(foot), 20, y, color(0x8FA0BA), false)
     }
 
-    private fun drawPanel(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int) {
+    private fun drawPanel(context: GuiGraphics, left: Int, top: Int, right: Int, bottom: Int) {
         context.fill(left, top, right, bottom, 0x88202020.toInt())
         context.fill(left + 1, top + 1, right - 1, bottom - 1, 0xAA101010.toInt())
     }
 
-    private fun drawSectionCard(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int, title: String) {
+    private fun drawSectionCard(context: GuiGraphics, left: Int, top: Int, right: Int, bottom: Int, title: String) {
         context.fill(left, top, right, bottom, 0x3A1F2734)
         context.fill(left, top, right, top + 1, 0x8F637A9B.toInt())
-        context.drawText(textRenderer, Text.literal(title), left + 6, top + 5, color(0xDDE8FF), false)
+        context.drawString(font, Component.literal(title), left + 6, top + 5, color(0xDDE8FF), false)
     }
 
-    private inline fun withScissor(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int, block: () -> Unit) {
+    private inline fun withScissor(context: GuiGraphics, left: Int, top: Int, right: Int, bottom: Int, block: () -> Unit) {
         val scLeft = left.coerceAtLeast(0)
         val scTop = top.coerceAtLeast(0)
         val scRight = right.coerceAtMost(width)
@@ -1093,9 +1093,9 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         }
     }
 
-    private fun drawClampedText(context: DrawContext, value: String, x: Int, y: Int, maxWidth: Int, color: Int, shadow: Boolean = false) {
+    private fun drawClampedText(context: GuiGraphics, value: String, x: Int, y: Int, maxWidth: Int, color: Int, shadow: Boolean = false) {
         val text = trimToWidth(value, maxWidth)
-        context.drawText(textRenderer, Text.literal(text), x, y, color, shadow)
+        context.drawString(font, Component.literal(text), x, y, color, shadow)
     }
 
     private fun resultsPanelBounds(layout: LayoutMetrics = computeLayoutMetrics()): PanelBounds {
@@ -1122,10 +1122,10 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
         val statusBannerTopY = topControlsBottomY
         val statusBannerBottomY = statusBannerTopY + 20
         val statusTextY = statusBannerBottomY + 8
-        val contentTopY = statusTextY + textRenderer.fontHeight + 8
+        val contentTopY = statusTextY + font.fontHeight + 8
 
         val devToolsReservedHeight = if (devModeEnabled) 22 else 0
-        val footerReservedHeight = DonutsAuctionsScreenLayoutMath.computeFooterReservedHeight(textRenderer.fontHeight, showRepairLine)
+        val footerReservedHeight = DonutsAuctionsScreenLayoutMath.computeFooterReservedHeight(font.fontHeight, showRepairLine)
 
         val rawBottom = height - footerReservedHeight - devToolsReservedHeight - 6
         val minBottom = contentTopY + 100
@@ -1219,10 +1219,10 @@ class DonutsAuctionsScreen : Screen(Text.literal("DonutsAuctions")) {
 
     private fun trimToWidth(value: String, maxWidth: Int): String {
         if (maxWidth <= 0) return ""
-        if (textRenderer.getWidth(value) <= maxWidth) return value
+        if (font.getWidth(value) <= maxWidth) return value
 
         var text = value
-        while (text.isNotEmpty() && textRenderer.getWidth("$text...") > maxWidth) {
+        while (text.isNotEmpty() && font.getWidth("$text...") > maxWidth) {
             text = text.dropLast(1)
         }
         return if (text.isEmpty()) "" else "$text..."
