@@ -372,11 +372,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         val captureObserved = activeJob?.let {
             lastCaptureAt >= it.pageStartedAtMs && activeQuery == it.query
         } ?: false
-        val nextPageControlAvailable = if (automationInventoryOpen) {
-            findNextPageSlotId(client) != null
-        } else {
-            false
-        }
+        // Page navigation is manual in this port; no simulated auction clicks.
+        val nextPageControlAvailable = false
 
         val action = automationCoordinator.tick(
             IdleAhAutomationCoordinator.TickInput(
