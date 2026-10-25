@@ -59,7 +59,9 @@ class DonutsAuctionsConfigManager(
             watchCycleIntervalMs = properties.getProperty("watchCycleIntervalMs")?.toLongOrNull() ?: 60_000L,
             generalCycleIntervalMs = properties.getProperty("generalCycleIntervalMs")?.toLongOrNull() ?: 120_000L,
             commandMinIntervalMs = properties.getProperty("commandMinIntervalMs")?.toLongOrNull() ?: 2_500L,
-            pageCaptureTimeoutMs = properties.getProperty("pageCaptureTimeoutMs")?.toLongOrNull() ?: 2_500L
+            pageCaptureTimeoutMs = properties.getProperty("pageCaptureTimeoutMs")?.toLongOrNull() ?: 2_500L,
+            apiKey = properties.getProperty("apiKey") ?: "",
+            apiImportPages = properties.getProperty("apiImportPages")?.toIntOrNull() ?: 20
         ).normalized()
     }
 
@@ -84,7 +86,9 @@ class DonutsAuctionsConfigManager(
             setProperty("generalCycleIntervalMs", config.generalCycleIntervalMs.toString())
             setProperty("commandMinIntervalMs", config.commandMinIntervalMs.toString())
             setProperty("pageCaptureTimeoutMs", config.pageCaptureTimeoutMs.toString())
+            setProperty("apiKey", config.apiKey)
+            setProperty("apiImportPages", config.apiImportPages.toString())
         }
-        properties.store(output, "DonutsAuctions configuration")
+        properties.store(output, "DonutsAuctions configuration. Keep apiKey private.")
     }
 }
