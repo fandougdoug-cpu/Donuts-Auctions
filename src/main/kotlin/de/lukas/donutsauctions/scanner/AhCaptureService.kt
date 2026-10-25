@@ -28,9 +28,9 @@ class AhCaptureService(
 
     private val pageRegex = Regex("(?i)page\\D*(\\d+)")
     private val sellerRegex = Regex("(?i)(seller|owner)\\s*[:>-]\\s*(.+)$")
-    private val priceLineRegex = Regex("(?i)\\bprice\\b")
-    private val sellerLineRegex = Regex("(?i)\\b(seller|owner)\\b")
-    private val timeLeftLineRegex = Regex("(?i)\\btime\\s*left\\b")
+    private val priceLineRegex = Regex("(?i)(\\bprice\\b|\\bcost\\b|\\bbuy\\b|\\bcoins?\\b|\\bcash\\b|[$€£])")
+    private val sellerLineRegex = Regex("(?i)\\b(seller|owner|listed by|from)\\b")
+    private val timeLeftLineRegex = Regex("(?i)(\\btime\\s*left\\b|\\bexpires?\\b|\\bending\\b|\\bremaining\\b)")
 
     @Synchronized
     fun resetSession() {
@@ -164,11 +164,14 @@ class AhCaptureService(
             return false
         }
 
+        // Auction servers do not all use the same lore labels. Requiring the exact
+        // trio "Price", "Seller", and "Time Left" silently rejects valid listings.
+        // Accept common price/seller/expiry wording while still avoiding ordinary items.
         val hasPrice = loreLines.any { priceLineRegex.containsMatchIn(it) }
         val hasSeller = loreLines.any { sellerLineRegex.containsMatchIn(it) }
         val hasTimeLeft = loreLines.any { timeLeftLineRegex.containsMatchIn(it) }
 
-        return hasPrice && hasSeller && hasTimeLeft
+        return hasPrice && (hasSeller || hasTimeLeft)
     }
 
     private fun inferSelectedMode(stack: ItemStack, client: Minecraft): String? {
