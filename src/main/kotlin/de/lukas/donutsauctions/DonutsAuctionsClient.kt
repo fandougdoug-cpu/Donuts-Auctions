@@ -34,12 +34,11 @@ import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.ChatScreen
-import net.minecraft.client.gui.screens.GameMenuScreen
+import net.minecraft.client.gui.screens.PauseScreen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.KeyMapping
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.world.inventory.ChestMenu
-import net.minecraft.world.inventory.ClickType
 import org.slf4j.LoggerFactory
 import org.lwjgl.glfw.GLFW
 import java.nio.file.Path
@@ -130,7 +129,7 @@ object DonutsAuctionsClient : ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             while (openGuiKey.consumeClick()) {
-                client.setScreen(DonutsAuctionsScreen())
+                client.gui.setScreen(DonutsAuctionsScreen())
             }
             runCaptureTick(client)
             runAutomationTick(client)
@@ -217,7 +216,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
 
         val now = System.currentTimeMillis()
-        val handledScreen = client.screen as? AbstractContainerScreen<*>
+        val handledScreen = client.gui.screen() as? AbstractContainerScreen<*>
         val forcedTitle = if (handledScreen == null) resolveHeadlessCaptureTitle(client, now) else null
         if (handledScreen == null && forcedTitle == null) {
             if (auctionMenuOpen) {
@@ -297,19 +296,19 @@ object DonutsAuctionsClient : ClientModInitializer {
             return
         }
 
-        val serverHost = normalizeServerHost(client.currentServer?.address)
+        val serverHost = normalizeServerHost(client.currentServer?.ip)
         val serverAllowed = isAllowedAutomationHost(serverHost)
         val serverLabel = serverHost ?: "singleplayer"
 
         idleTracker.update(player, now)
         val isIdle = idleTracker.isIdle(now, config.idleStartDelayMs)
         val idleRemainingMs = idleTracker.remainingIdleMs(now, config.idleStartDelayMs)
-        val currentScreen = client.screen
+        val currentScreen = client.gui.screen()
         val visibleHandledScreenOpen = currentScreen is AbstractContainerScreen<*>
         val headlessScreenOpen = isHeadlessAuctionHandlerOpen(client)
         val automationInventoryOpen = visibleHandledScreenOpen || headlessScreenOpen
         val isChatScreenOpen = currentScreen is ChatScreen
-        val isPauseMenuOpen = currentScreen is GameMenuScreen
+        val isPauseMenuOpen = currentScreen is PauseScreen
         val repositoryHealth = repositoryHealthSnapshot()
         val repositoryWritable = !repositoryHealth.readOnly
         val cooldownRemainingMs = (automationCooldownUntilMs - now).coerceAtLeast(0L)
@@ -446,33 +445,8 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun clickNextPageControl(client: Minecraft) {
-        val player = client.player ?: return
-        val handler = player.containerMenu ?: return
-        val slotId = findNextPageSlotId(client)
-        if (slotId == null) {
-            logDebug("Automation could not click next page: NEXT control missing")
-            return
-        }
-        client.gameMode?.handleInventoryMouseClick(
-            handler.containerId,
-            slotId,
-            0,
-            ClickType.PICKUP,
-            player
-        )
-        logDebug("Automation clicked NEXT on slotId=$slotId")
-    }
-
-    private fun findNextPageSlotId(client: Minecraft): Int? {
-        val player = client.player ?: return null
-        val handler = player.containerMenu ?: return null
-        val topSlotCount = if (handler is ChestMenu) {
-            handler.rowCount * 9
-        } else {
-            (handler.slots.size - 36).coerceAtLeast(0)
-        }
-        val topSlots = handler.slots.take(topSlotCount)
-        return AhNextControlLocator.findStrictNextSlotId(topSlots)
+        // Automated inventory clicking is intentionally disabled in this port.
+        logDebug("Automatic page clicking is disabled; navigate auction pages manually.")
     }
 
     private fun loadNormalizedWatchTerms(): List<String> {
@@ -514,7 +488,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     internal fun isAllowedAutomationServer(client: Minecraft = Minecraft.getInstance()): Boolean {
-        return isAllowedAutomationHost(normalizeServerHost(client.currentServer?.address))
+        return isAllowedAutomationHost(normalizeServerHost(client.currentServer?.ip))
     }
 
     fun shouldSuppressAuctionScreenOpen(packetTitle: String): Boolean {
@@ -564,7 +538,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun isHeadlessAuctionHandlerOpen(client: Minecraft): Boolean {
-        if (client.screen is AbstractContainerScreen<*>) {
+        if (client.gui.screen() is AbstractContainerScreen<*>) {
             return false
         }
         val title = activeHeadlessAuctionTitle ?: return false
@@ -644,7 +618,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun currentServerId(): String {
-        return Minecraft.getInstance().currentServer?.address ?: "singleplayer"
+        return Minecraft.getInstance().currentServer?.ip ?: "singleplayer"
     }
 
     private fun logNoop(reason: String, now: Long) {
