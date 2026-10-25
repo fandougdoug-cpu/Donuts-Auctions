@@ -230,7 +230,7 @@ class AhCaptureService(
 
     private fun tooltipLines(stack: ItemStack, client: Minecraft): List<String> {
         return try {
-            stack.getTooltip(Item.TooltipContext.DEFAULT, client.player, TooltipType.BASIC).map { sanitize(it.string) }
+            stack.getTooltipLines(Item.TooltipContext.EMPTY, client.player, TooltipFlag.Default.NORMAL).map { sanitize(it.string) }
         } catch (_: Throwable) {
             listOf(sanitize(stack.hoverName.string))
         }
