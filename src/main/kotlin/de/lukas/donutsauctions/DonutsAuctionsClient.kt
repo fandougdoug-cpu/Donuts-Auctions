@@ -454,10 +454,10 @@ object DonutsAuctionsClient : ClientModInitializer {
             return
         }
         client.gameMode?.handleInventoryMouseClick(
-            handler.syncId,
+            handler.containerId,
             slotId,
             0,
-            SlotActionType.PICKUP,
+            ClickType.PICKUP,
             player
         )
         logDebug("Automation clicked NEXT on slotId=$slotId")
@@ -467,7 +467,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         val player = client.player ?: return null
         val handler = player.containerMenu ?: return null
         val topSlotCount = if (handler is ChestMenu) {
-            handler.rows * 9
+            handler.rowCount * 9
         } else {
             (handler.slots.size - 36).coerceAtLeast(0)
         }
@@ -552,8 +552,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         val title = activeHeadlessAuctionTitle ?: return null
         val expectedSyncId = activeHeadlessAuctionSyncId ?: return null
         val handler = client.player?.containerMenu ?: return null
-        if (handler.syncId != expectedSyncId) {
-            val reason = "Automation headless sync mismatch (expected=$expectedSyncId, actual=${handler.syncId})"
+        if (handler.containerId != expectedSyncId) {
+            val reason = "Automation headless sync mismatch (expected=$expectedSyncId, actual=${handler.containerId})"
             activateAutomationCooldown(now, reason)
             automationCoordinator.requestStop(reason)
             onHeadlessAuctionScreenClosed(reason)
@@ -573,7 +573,7 @@ object DonutsAuctionsClient : ClientModInitializer {
             return false
         }
         val handler = client.player?.containerMenu ?: return false
-        return handler.syncId == expectedSyncId
+        return handler.containerId == expectedSyncId
     }
 
     private fun activateAutomationCooldown(now: Long, reason: String) {
