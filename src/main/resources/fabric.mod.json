@@ -35,6 +35,8 @@
     "minecraft": "~${minecraft_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
     "modmenu": ">=${modmenu_version}",
-    "cloth-config2": ">=${cloth_config_version}"
+    "cloth-config2": ">=${cloth_config_version}",
+    "java": ">=25",
+    "fabric-api": "*"
   }
 }
