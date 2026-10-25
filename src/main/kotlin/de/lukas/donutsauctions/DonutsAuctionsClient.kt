@@ -205,7 +205,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun runCaptureTick(client: MinecraftClient) {
+    private fun runCaptureTick(client: Minecraft) {
         val config = configManager.config
         if (!config.trackingEnabled) {
             return
@@ -217,7 +217,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
 
         val now = System.currentTimeMillis()
-        val handledScreen = client.screen as? HandledScreen<*>
+        val handledScreen = client.screen as? AbstractContainerScreen<*>
         val forcedTitle = if (handledScreen == null) resolveHeadlessCaptureTitle(client, now) else null
         if (handledScreen == null && forcedTitle == null) {
             if (auctionMenuOpen) {
@@ -280,7 +280,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun runAutomationTick(client: MinecraftClient) {
+    private fun runAutomationTick(client: Minecraft) {
         if (!::configManager.isInitialized) {
             return
         }
@@ -297,15 +297,15 @@ object DonutsAuctionsClient : ClientModInitializer {
             return
         }
 
-        val serverHost = normalizeServerHost(client.currentServerEntry?.address)
+        val serverHost = normalizeServerHost(client.currentServer?.address)
         val serverAllowed = isAllowedAutomationHost(serverHost)
         val serverLabel = serverHost ?: "singleplayer"
 
         idleTracker.update(player, now)
         val isIdle = idleTracker.isIdle(now, config.idleStartDelayMs)
         val idleRemainingMs = idleTracker.remainingIdleMs(now, config.idleStartDelayMs)
-        val currentScreen = client.currentScreen
-        val visibleHandledScreenOpen = currentScreen is HandledScreen<*>
+        val currentScreen = client.screen
+        val visibleHandledScreenOpen = currentScreen is AbstractContainerScreen<*>
         val headlessScreenOpen = isHeadlessAuctionHandlerOpen(client)
         val automationInventoryOpen = visibleHandledScreenOpen || headlessScreenOpen
         val isChatScreenOpen = currentScreen is ChatScreen
@@ -438,22 +438,22 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun dispatchAutomationCommand(client: MinecraftClient, commandNoSlash: String) {
+    private fun dispatchAutomationCommand(client: Minecraft, commandNoSlash: String) {
         val player = client.player ?: return
         automationExpectingHeadlessOpenUntilMs = System.currentTimeMillis() + HEADLESS_OPEN_EXPECT_TIMEOUT_MS
-        player.networkHandler.sendChatCommand(commandNoSlash)
+        player.connection.sendCommand(commandNoSlash)
         logDebug("Automation dispatched '/$commandNoSlash'")
     }
 
-    private fun clickNextPageControl(client: MinecraftClient) {
+    private fun clickNextPageControl(client: Minecraft) {
         val player = client.player ?: return
-        val handler = player.currentScreenHandler ?: return
+        val handler = player.containerMenu ?: return
         val slotId = findNextPageSlotId(client)
         if (slotId == null) {
             logDebug("Automation could not click next page: NEXT control missing")
             return
         }
-        client.interactionManager?.clickSlot(
+        client.gameMode?.handleInventoryMouseClick(
             handler.syncId,
             slotId,
             0,
@@ -463,10 +463,10 @@ object DonutsAuctionsClient : ClientModInitializer {
         logDebug("Automation clicked NEXT on slotId=$slotId")
     }
 
-    private fun findNextPageSlotId(client: MinecraftClient): Int? {
+    private fun findNextPageSlotId(client: Minecraft): Int? {
         val player = client.player ?: return null
-        val handler = player.currentScreenHandler ?: return null
-        val topSlotCount = if (handler is GenericContainerScreenHandler) {
+        val handler = player.containerMenu ?: return null
+        val topSlotCount = if (handler is ChestMenu) {
             handler.rows * 9
         } else {
             (handler.slots.size - 36).coerceAtLeast(0)
@@ -513,8 +513,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         return normalized == "donutsmp.com" || normalized.endsWith(".donutsmp.com")
     }
 
-    internal fun isAllowedAutomationServer(client: MinecraftClient = MinecraftClient.getInstance()): Boolean {
-        return isAllowedAutomationHost(normalizeServerHost(client.currentServerEntry?.address))
+    internal fun isAllowedAutomationServer(client: Minecraft = Minecraft.getInstance()): Boolean {
+        return isAllowedAutomationHost(normalizeServerHost(client.currentServer?.address))
     }
 
     fun shouldSuppressAuctionScreenOpen(packetTitle: String): Boolean {
@@ -548,7 +548,7 @@ object DonutsAuctionsClient : ClientModInitializer {
         }
     }
 
-    private fun resolveHeadlessCaptureTitle(client: MinecraftClient, now: Long): String? {
+    private fun resolveHeadlessCaptureTitle(client: Minecraft, now: Long): String? {
         val title = activeHeadlessAuctionTitle ?: return null
         val expectedSyncId = activeHeadlessAuctionSyncId ?: return null
         val handler = client.player?.currentScreenHandler ?: return null
@@ -563,8 +563,8 @@ object DonutsAuctionsClient : ClientModInitializer {
         return title
     }
 
-    private fun isHeadlessAuctionHandlerOpen(client: MinecraftClient): Boolean {
-        if (client.currentScreen is HandledScreen<*>) {
+    private fun isHeadlessAuctionHandlerOpen(client: Minecraft): Boolean {
+        if (client.screen is AbstractContainerScreen<*>) {
             return false
         }
         val title = activeHeadlessAuctionTitle ?: return false
@@ -644,7 +644,7 @@ object DonutsAuctionsClient : ClientModInitializer {
     }
 
     private fun currentServerId(): String {
-        return MinecraftClient.getInstance().currentServerEntry?.address ?: "singleplayer"
+        return Minecraft.getInstance().currentServerEntry?.address ?: "singleplayer"
     }
 
     private fun logNoop(reason: String, now: Long) {
