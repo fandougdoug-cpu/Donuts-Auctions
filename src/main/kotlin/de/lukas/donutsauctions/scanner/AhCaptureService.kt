@@ -41,7 +41,7 @@ class AhCaptureService(
         val player = client.player ?: return AhCaptureResult.Noop("Player unavailable")
         val handler = player.containerMenu ?: return AhCaptureResult.Noop("Screen handler unavailable")
         val title = forcedTitle?.takeIf { it.isNotBlank() }
-            ?: client.screen?.title?.string
+            ?: client.gui.screen()?.title?.string
             ?: return AhCaptureResult.Noop("Capture title unavailable")
 
         val topSlotCount = determineTopSlotCount(handler)
