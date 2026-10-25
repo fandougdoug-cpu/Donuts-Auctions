@@ -16,7 +16,7 @@ class PlayerIdleTracker {
             vx = player.deltaMovement.x,
             vy = player.deltaMovement.y,
             vz = player.deltaMovement.z,
-            onGround = player.onGround,
+            onGround = player.onGround(),
             nowMs = nowMs
         )
     }
