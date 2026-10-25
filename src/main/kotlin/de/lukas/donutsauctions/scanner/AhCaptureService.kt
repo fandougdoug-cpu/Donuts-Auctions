@@ -123,7 +123,7 @@ class AhCaptureService(
 
     private fun determineTopSlotCount(handler: net.minecraft.world.inventory.AbstractContainerMenu): Int {
         if (handler is ChestMenu) {
-            return handler.rows * 9
+            return handler.rowCount * 9
         }
 
         val fallback = handler.slots.size - 36
