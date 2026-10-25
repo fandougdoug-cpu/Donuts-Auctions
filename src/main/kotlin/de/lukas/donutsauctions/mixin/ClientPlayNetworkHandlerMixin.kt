@@ -20,7 +20,7 @@ abstract class ClientPlayNetworkHandlerMixin {
     private lateinit var minecraft: Minecraft
 
     @Inject(method = ["handleOpenScreen"], at = [At("HEAD")], cancellable = true)
-    private fun suppressAutomationScreen(packet: OpenScreenS2CPacket, ci: CallbackInfo) {
+    private fun suppressAutomationScreen(packet: ClientboundOpenScreenPacket, ci: CallbackInfo) {
         val rawTitle = packet.title.string
         if (!DonutsAuctionsClient.shouldSuppressAuctionScreenOpen(rawTitle)) {
             return
